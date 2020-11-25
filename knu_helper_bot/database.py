@@ -5,6 +5,7 @@ import sqlalchemy as sqa
 from sqlalchemy import create_engine
 from sqlalchemy import MetaData, Table, Column, Sequence
 from sqlalchemy.sql.sqltypes import *
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
@@ -23,10 +24,36 @@ Session = sessionmaker(bind=db)
 class User(Base):
     __tablename__ = "users"
 
-    tg_id = Column(Integer, autoincrement=False, primary_key=True)
-    tg_username = Column(String)
-    is_admin = Column(Boolean)
-    students_group_id = Column(Integer, ForeignKey('students_groups.id'))
+    tg_id = Column(
+        Integer,
+        autoincrement=False,
+        primary_key=True,
+    )
+    tg_username = Column(
+        String,
+        nullable=False,
+    )
+    is_admin = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+    students_group_id = Column(
+        Integer,
+        ForeignKey("students_groups.id"),
+        nullable=True,
+    )
+    current_state = Column(
+        String,
+        nullable=True,
+        default=None,
+    )
+    state_data = Column(
+        JSONB,
+        nullable=False,
+        default=dict,
+        server_default="{}",
+    )
 
     students_group = relationship("StudentsGroup", back_populates="students")
 
@@ -37,8 +64,14 @@ class User(Base):
 class StudentsGroup(Base):
     __tablename__ = "students_groups"
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
+    id = Column(
+        Integer,
+        primary_key=True,
+    )
+    name = Column(
+        String,
+        nullable=False,
+    )
 
     students = relationship("User", order_by=User.tg_id, back_populates="students_group")
 

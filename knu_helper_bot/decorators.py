@@ -8,8 +8,13 @@ from database import User
 
 
 def db_session(func):
+    """ Pushes 'session' argument to a function """
+
     @wraps(func)
     def inner(*args, **kwargs):
+        if "session" in kwargs:
+            return func(*args, **kwargs)
+
         kwargs.update({
             "session": Session(),
         })
@@ -19,10 +24,15 @@ def db_session(func):
 
 def acquire_user(func):
     """
-
+    Pushes 'user' argument to a function.
+    Creates or updates User if needed.
     """
+
     @wraps(func)
     def inner(*args, **kwargs):
+        if "user" in kwargs:
+            return func(*args, **kwargs)
+
         update: Update = kwargs.get("update", args[0])
         session: Session = kwargs.get("session")
 
