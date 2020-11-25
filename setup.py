@@ -23,6 +23,7 @@ setup(
         "urllib3==1.26.2",
         "psycopg2==2.8.6"
     ],
+    setup_requires=["pytest-runner", "flake8"],
     tests_require=["pytest"],
     entry_points={
         "console_scripts": ["apply-migrations=migrations.apply:main"]
