@@ -6,8 +6,7 @@ from telegram.ext import (
     CommandHandler,
 )
 
-import config
-import commands
+from knu_helper_bot import config, commands
 
 logger = logging.getLogger(__name__)
 
