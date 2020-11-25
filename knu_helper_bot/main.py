@@ -3,10 +3,12 @@ import logging
 
 from telegram.ext import (
     Updater,
+    Filters,
     CommandHandler,
+    CallbackQueryHandler,
 )
 
-from knu_helper_bot import config, commands
+from knu_helper_bot import config, commands, states
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +19,12 @@ def main():
 
     dp.add_handler(CommandHandler("start", commands.start))
     dp.add_handler(CommandHandler("help", commands.help))
+    dp.add_handler(CommandHandler("change_group", commands.select_students_group))
+
+    dp.add_handler(CallbackQueryHandler(
+        commands.select_students_group,
+        states.UserSelectStudentsGroupStep.parse_pattern,
+    ))
 
     updater.start_polling()
 
