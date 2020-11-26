@@ -26,6 +26,7 @@ from knu_helper_bot.database import User, StudentsGroup, Lesson, TimetableLesson
 from knu_helper_bot.decorators import acquire_user, db_session
 from knu_helper_bot.dictionaries import states, days_of_week, timetable
 from knu_helper_bot.keyboards import build_keyboard_menu
+from knu_helper_bot.dictionaries.phrases import *
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +136,7 @@ def edit_timetable(update: Update, ctx: CallbackContext, session: Session, user:
         for day in days_of_week.DAYS_OF_WEEK:
             kb_buttons.append(InlineKeyboardButton(
                 # todo: pencil emoji
-                text="Ред. {}".format(day.name.lower()),
+                text="{} {}".format(e_pencil, day.name),
                 callback_data=states.EditTimetableDay.build_pattern.format(day),
             ))
         bot.sendMessage(update.effective_user.id,
@@ -151,7 +152,7 @@ def edit_timetable_callback(update: Update, ctx: CallbackContext, session: Sessi
     for day in days_of_week.DAYS_OF_WEEK:
         kb_buttons.append(InlineKeyboardButton(
             # todo: pencil emoji
-            text="Ред. {}".format(day.name.lower()),
+            text="{} {}".format(e_pencil, day.name),
             callback_data=states.EditTimetableDay.build_pattern.format(day),
         ))
     bot.editMessageText(
@@ -172,7 +173,7 @@ def edit_timetable_day_callback(update: Update, ctx: CallbackContext, session: S
     keyboard = InlineKeyboardMarkup(build_keyboard_menu(
         kb_buttons,
         footer_buttons=[
-            InlineKeyboardButton(text="Додати",
+            InlineKeyboardButton(text="{} Додати".format(e_new),
                                  callback_data=states.AddLessonToTimetable.build_pattern.format(day)),
             InlineKeyboardButton(text="<<", callback_data=states.EditTimetable.build_pattern),
         ],
@@ -210,7 +211,7 @@ def add_lesson_callback(update: Update, ctx: CallbackContext, session: Session, 
     bot.editMessageText(
         chat_id=update.effective_user.id,
         message_id=update.callback_query.message.message_id,
-        text="Який предмет додамо?",
+        text="{} Який предмет додамо?".format(e_books),
         reply_markup=keyboard,
         parse_mode="markdown",
     )
@@ -249,7 +250,7 @@ def add_lesson_lesson_callback(update: Update, ctx: CallbackContext, session: Se
     )
     bot.sendMessage(
         chat_id=update.effective_user.id,
-        text="Хто викладає?",
+        text="{} Хто викладає?".format(e_person),
         reply_markup=keyboard,
         parse_mode="markdown",
     )
@@ -284,7 +285,8 @@ def add_lesson_teacher_callback(update: Update, ctx: CallbackContext, session: S
     # TODO: iterate over existing lessons
     bot.sendMessage(
         chat_id=update.effective_user.id,
-        text="О котрій проводиться пара?\nЗаписуйте розклад у вигляді \"8:40 - 10:15\".",
+        text="{} О котрій проводиться пара?\n"
+             "Записуйте розклад у вигляді \"8:40 - 10:15\".".format(e_clock),
         reply_markup=keyboard,
         parse_mode="markdown",
     )
