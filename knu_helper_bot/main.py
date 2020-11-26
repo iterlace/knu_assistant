@@ -32,22 +32,25 @@ def main():
         ),
     )
     dp.add_handler(CommandHandler("help", commands.help))
-    dp.add_handler(CommandHandler("change_group", commands.select_students_group))
-    dp.add_handler(CommandHandler("show_timetable", commands.show_timetable))
 
-    # dp.add_handler(CallbackQueryHandler(
-    #     commands.select_students_group,
-    #     states.UserSelectStudentsGroupStep.parse_pattern,
-    # ))
+    # Managing user's group
+    dp.add_handler(CommandHandler("change_group", commands.select_students_group))
+    dp.add_handler(CallbackQueryHandler(
+        commands.select_students_group,
+        pattern=states.UserSelectStudentsGroupStep.parse_pattern,
+    ))
+
+    # Managing group's timetable
+    dp.add_handler(CommandHandler("show_timetable", commands.show_timetable))
     dp.add_handler(CommandHandler("edit_timetable", commands.edit_timetable))
     dp.add_handler(CallbackQueryHandler(
-                        commands.edit_timetable_callback,
-                        pattern=states.EditTimetable.parse_pattern,
-                    ))
+        commands.edit_timetable_callback,
+        pattern=states.EditTimetable.parse_pattern,
+    ))
     dp.add_handler(CallbackQueryHandler(
-                        commands.edit_timetable_day_callback,
-                        pattern=states.EditTimetableDay.parse_pattern,
-                    ))
+        commands.edit_timetable_day_callback,
+        pattern=states.EditTimetableDay.parse_pattern,
+    ))
     # Edit a day of a timetable
     dp.add_handler(
         ConversationHandler(
@@ -56,18 +59,14 @@ def main():
                 pattern=states.AddLessonToTimetable.parse_pattern,
             )],
             states={
-                "read_lesson": [
-                    CallbackQueryHandler(
-                        commands.add_lesson_lesson_callback,
-                        pass_user_data=True,
-                    ),
-                ],
-                "read_teacher": [
-                    CallbackQueryHandler(
-                        commands.add_lesson_teacher_callback,
-                        pass_user_data=True,
-                    ),
-                ],
+                "read_lesson": [CallbackQueryHandler(
+                    commands.add_lesson_lesson_callback,
+                    pass_user_data=True,
+                )],
+                "read_teacher": [CallbackQueryHandler(
+                    commands.add_lesson_teacher_callback,
+                    pass_user_data=True,
+                )],
                 "read_time": [
                     MessageHandler(
                         Filters.text,
