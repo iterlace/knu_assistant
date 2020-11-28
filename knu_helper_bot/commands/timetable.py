@@ -10,13 +10,10 @@ from telegram import (
     ReplyKeyboardMarkup,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    ParseMode,
 )
 from telegram.ext import (
-    Updater,
-    CommandHandler,
-    MessageHandler,
-    Filters,
-    CallbackQueryHandler,
+    ConversationHandler,
     CallbackContext,
 )
 from sqlalchemy.orm import Session
@@ -29,69 +26,18 @@ from knu_helper_bot.keyboards import build_keyboard_menu
 from knu_helper_bot.dictionaries.phrases import *
 
 logger = logging.getLogger(__name__)
-
-
-@db_session
-@acquire_user
-def start(update: Update, ctx: CallbackContext, session: Session, user: User):
-    bot.sendMessage(update.effective_user.id, """
-Привіт!
-    """)
-    if user.students_group_id is None:
-        kb_buttons = []
-        for group in session.query(StudentsGroup).order_by("name"):
-            kb_buttons.append(InlineKeyboardButton(
-                text=group.name,
-                callback_data=states.UserSelectStudentsGroupStep.build_pattern.format(group.id),
-            ))
-
-        bot.sendMessage(update.effective_user.id, "З якої групи ти завітав?",
-                        reply_markup=InlineKeyboardMarkup(build_keyboard_menu(kb_buttons, 4)))
-
-
-@db_session
-@acquire_user
-def select_students_group(update: Update, ctx: CallbackContext, session: Session, user: User):
-    if not update.callback_query:
-        # User wants to change their group
-        kb_buttons = []
-        for group in session.query(StudentsGroup).order_by("name"):
-            kb_buttons.append(InlineKeyboardButton(
-                text=group.name,
-                callback_data=states.UserSelectStudentsGroupStep.build_pattern.format(group.id),
-            ))
-        bot.sendMessage(update.effective_user.id, "Обери свою групу",
-                        reply_markup=InlineKeyboardMarkup(build_keyboard_menu(kb_buttons, 4)))
-    else:
-        # User selected his group
-        group_id = states.UserSelectStudentsGroupStep.parse_pattern.match(update.callback_query.data)
-        if group_id is None:
-            logger.error("Received unexpected group_id: {}! Update: {}".format(update.callback_query.data, update))
-            return
-        group_id = group_id.group(1)
-        group = session.query(StudentsGroup).get(group_id)
-        if group is None:
-            logger.error("Received non-existing group: {}! Update: {}".format(group_id, update))
-            return
-        user.students_group_id = group_id
-        session.commit()
-        bot.editMessageReplyMarkup(update.effective_user.id, update.callback_query.message.message_id, reply_markup=None)
-        bot.sendMessage(update.effective_user.id, "Групу {} встановлено!".format(group.name))
+__all__ = ["show_timetable", "edit_timetable", "add_lesson_callback", "add_lesson_teacher_callback",
+           "add_lesson_lesson_callback", "edit_timetable_callback", "edit_timetable_day_callback", "add_lesson_time",
+           "cancel_add_lesson_callback", "add_lesson_lesson_type_callback"]
 
 
 def build_timetable_lesson(lesson: TimetableLesson):
     result_str = ""
-    if lesson.starts_at and lesson.ends_at:
-        result_str += "{} - {}\n".format(
-            lesson.starts_at.strftime("%H:%M"),
-            lesson.ends_at.strftime("%H:%M"),
-        )
-    if lesson.lesson or lesson.teacher:
-        if lesson.lesson:
-            result_str += "{}".format(lesson.lesson.name)
-        if lesson.teacher:
-            result_str += " ({})".format(lesson.teacher.full_name())
-        result_str += "\n"
+    result_str += "{} {} - {}\n{} <b>{}</b>  {} {}\n".format(
+        e_clock, lesson.starts_at.strftime("%H:%M"), lesson.ends_at.strftime("%H:%M"),
+        e_books, lesson.lesson.name,
+        e_person, lesson.teacher.short_name
+    )
     return result_str
 
 
@@ -115,8 +61,15 @@ def build_timetable_day(group: StudentsGroup, session: Session, day: int):
 def build_timetable_week(group: StudentsGroup, session: Session):
     lessons_str = ""
     for day in days_of_week.DAYS_OF_WEEK:
-        lessons_str += "**{}**\n{}\n".format(day.name, build_timetable_day(group, session, day))
+        lessons_str += "[ <b>{}</b> ]\n\n{}\n".format(day.name, build_timetable_day(group, session, day))
     return lessons_str
+
+
+# Buttons
+cancel_add_lesson_button = InlineKeyboardButton(
+    text="{} Скасувати".format(e_cancel),
+    callback_data=states.CancelAddLessonToTimetable.build_pattern,
+)
 
 
 @db_session
@@ -125,7 +78,7 @@ def show_timetable(update: Update, ctx: CallbackContext, session: Session, user:
     if not update.callback_query:
         bot.sendMessage(update.effective_user.id,
                         text=build_timetable_week(user.students_group, session),
-                        parse_mode="markdown")
+                        parse_mode=ParseMode.HTML)
 
 
 @db_session
@@ -142,7 +95,7 @@ def edit_timetable(update: Update, ctx: CallbackContext, session: Session, user:
         bot.sendMessage(update.effective_user.id,
                         text=build_timetable_week(user.students_group, session),
                         reply_markup=InlineKeyboardMarkup(build_keyboard_menu(kb_buttons, 2)),
-                        parse_mode="markdown")
+                        parse_mode=ParseMode.HTML)
 
 
 @db_session
@@ -151,7 +104,6 @@ def edit_timetable_callback(update: Update, ctx: CallbackContext, session: Sessi
     kb_buttons = []
     for day in days_of_week.DAYS_OF_WEEK:
         kb_buttons.append(InlineKeyboardButton(
-            # todo: pencil emoji
             text="{} {}".format(e_pencil, day.name),
             callback_data=states.EditTimetableDay.build_pattern.format(day),
         ))
@@ -160,7 +112,7 @@ def edit_timetable_callback(update: Update, ctx: CallbackContext, session: Sessi
         message_id=update.callback_query.message.message_id,
         text=build_timetable_week(user.students_group, session),
         reply_markup=InlineKeyboardMarkup(build_keyboard_menu(kb_buttons, 2)),
-        parse_mode="markdown",
+        parse_mode=ParseMode.HTML,
     )
 
 
@@ -168,7 +120,7 @@ def edit_timetable_callback(update: Update, ctx: CallbackContext, session: Sessi
 @acquire_user
 def edit_timetable_day_callback(update: Update, ctx: CallbackContext, session: Session, user: User):
     match = states.EditTimetableDay.parse_pattern.match(update.callback_query.data)
-    day = match.group(1)
+    day = int(match.group(1))
     kb_buttons = []
     keyboard = InlineKeyboardMarkup(build_keyboard_menu(
         kb_buttons,
@@ -183,9 +135,9 @@ def edit_timetable_day_callback(update: Update, ctx: CallbackContext, session: S
     bot.editMessageText(
         chat_id=update.effective_user.id,
         message_id=update.callback_query.message.message_id,
-        text=build_timetable_week(user.students_group, session),
+        text=build_timetable_day(user.students_group, session, day) or "Пари відсутні",
         reply_markup=keyboard,
-        parse_mode="markdown",
+        parse_mode=ParseMode.HTML,
     )
 
 
@@ -202,9 +154,7 @@ def add_lesson_callback(update: Update, ctx: CallbackContext, session: Session, 
         ))
     keyboard = InlineKeyboardMarkup(build_keyboard_menu(
         kb_buttons,
-        footer_buttons=[
-            # TODO: cancel button
-        ],
+        footer_buttons=[cancel_add_lesson_button],
         n_cols=2,
     ))
     # TODO: iterate over existing lessons
@@ -213,7 +163,7 @@ def add_lesson_callback(update: Update, ctx: CallbackContext, session: Session, 
         message_id=update.callback_query.message.message_id,
         text="{} Який предмет додамо?".format(e_books),
         reply_markup=keyboard,
-        parse_mode="markdown",
+        parse_mode=ParseMode.HTML,
     )
     return "read_lesson"
 
@@ -225,34 +175,65 @@ def add_lesson_lesson_callback(update: Update, ctx: CallbackContext, session: Se
     lesson = session.query(Lesson).get(lesson_id)
     if lesson is None:
         # TODO
-        pass
+        return ConversationHandler.END
     ctx.user_data["lesson_id"] = lesson_id
+
     kb_buttons = []
-    for teacher in session.query(Teacher).order_by("last_name"):
+    for lesson_type in timetable.LESSON_TYPES.values():
         kb_buttons.append(InlineKeyboardButton(
-            text=teacher.full_name(),
-            callback_data=teacher.id,
+            text=lesson_type.name,
+            callback_data=lesson_type.keyword,
         ))
     keyboard = InlineKeyboardMarkup(build_keyboard_menu(
         kb_buttons,
-        footer_buttons=[
-            # TODO: cancel button
-        ],
+        footer_buttons=[cancel_add_lesson_button],
         n_cols=2,
     ))
-
     bot.editMessageText(
         chat_id=update.effective_user.id,
         message_id=update.callback_query.message.message_id,
         text="Предмет - {}".format(lesson.name),
         reply_markup=None,
-        parse_mode="markdown",
+        parse_mode=ParseMode.HTML,
+    )
+    bot.sendMessage(
+        chat_id=update.effective_user.id,
+        text="{} Який вид заняття?".format(e_person),
+        reply_markup=keyboard,
+        parse_mode=ParseMode.HTML,
+    )
+    return "read_lesson_type"
+
+
+@db_session
+@acquire_user
+def add_lesson_lesson_type_callback(update: Update, ctx: CallbackContext, session: Session, user: User):
+    lesson_type = update.callback_query.data
+    ctx.user_data["lesson_type"] = lesson_type
+
+    kb_buttons = []
+    for teacher in session.query(Teacher).order_by("last_name"):
+        kb_buttons.append(InlineKeyboardButton(
+            text=teacher.short_name,
+            callback_data=teacher.id,
+        ))
+    keyboard = InlineKeyboardMarkup(build_keyboard_menu(
+        kb_buttons,
+        footer_buttons=[cancel_add_lesson_button],
+        n_cols=2,
+    ))
+    bot.editMessageText(
+        chat_id=update.effective_user.id,
+        message_id=update.callback_query.message.message_id,
+        text="Тип предмету - {}".format(timetable.LESSON_TYPES[lesson_type].name),
+        reply_markup=None,
+        parse_mode=ParseMode.HTML,
     )
     bot.sendMessage(
         chat_id=update.effective_user.id,
         text="{} Хто викладає?".format(e_person),
         reply_markup=keyboard,
-        parse_mode="markdown",
+        parse_mode=ParseMode.HTML,
     )
     return "read_teacher"
 
@@ -269,18 +250,17 @@ def add_lesson_teacher_callback(update: Update, ctx: CallbackContext, session: S
 
     keyboard = InlineKeyboardMarkup(build_keyboard_menu(
         [],
-        footer_buttons=[
-            # TODO: cancel button
-        ],
+        # FIXME
+        # footer_buttons=[cancel_add_lesson_button],
         n_cols=2,
     ))
 
     bot.editMessageText(
         chat_id=update.effective_user.id,
         message_id=update.callback_query.message.message_id,
-        text="Викладач - {}".format(teacher.full_name()),
+        text="Викладач - {}".format(teacher.full_name),
         reply_markup=None,
-        parse_mode="markdown",
+        parse_mode=ParseMode.HTML,
     )
     # TODO: iterate over existing lessons
     bot.sendMessage(
@@ -288,7 +268,7 @@ def add_lesson_teacher_callback(update: Update, ctx: CallbackContext, session: S
         text="{} О котрій проводиться пара?\n"
              "Записуйте розклад у вигляді \"8:40 - 10:15\".".format(e_clock),
         reply_markup=keyboard,
-        parse_mode="markdown",
+        parse_mode=ParseMode.HTML,
     )
     return "read_time"
 
@@ -299,16 +279,14 @@ def add_lesson_time(update: Update, ctx: CallbackContext, session: Session, user
     if (match := timetable.time_span_pattern.match(update.message.text)) is None:
         keyboard = InlineKeyboardMarkup(build_keyboard_menu(
             [],
-            footer_buttons=[
-                # TODO: cancel button
-            ],
+            footer_buttons=[cancel_add_lesson_button],
             n_cols=2,
         ))
         bot.sendMessage(
             chat_id=update.effective_user.id,
             text="Некоректний формат!\nЗаписуйте розклад у вигляді \"8:40 - 10:15\".",
             reply_markup=keyboard,
-            parse_mode="markdown",
+            parse_mode=ParseMode.HTML,
         )
         return "read_time"
     else:
@@ -320,9 +298,6 @@ def add_lesson_time(update: Update, ctx: CallbackContext, session: Session, user
 
     keyboard = InlineKeyboardMarkup(build_keyboard_menu(
         [],
-        footer_buttons=[
-            # TODO: cancel button
-        ],
         n_cols=2,
     ))
 
@@ -343,10 +318,20 @@ def add_lesson_time(update: Update, ctx: CallbackContext, session: Session, user
         chat_id=update.effective_user.id,
         text="Предмет додано:\n{}".format(build_timetable_lesson(created_lesson)),
         reply_markup=keyboard,
-        parse_mode="markdown",
+        parse_mode=ParseMode.HTML,
     )
 
 
-def help(update: Update, ctx: CallbackContext):
-    update.message.reply_text("Со всеми вопросами пока обращаться к @the_Yttra или @iterlace")
+@db_session
+@acquire_user
+def cancel_add_lesson_callback(update: Update, ctx: CallbackContext, session: Session, user: User):
+    ctx.user_data.clear()
+
+    bot.editMessageText(
+        chat_id=update.effective_user.id,
+        message_id=update.callback_query.message.message_id,
+        text="Скасовано",
+        reply_markup=None,
+    )
+    return ConversationHandler.END
 

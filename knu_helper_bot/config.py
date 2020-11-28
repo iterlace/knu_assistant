@@ -9,6 +9,7 @@ env.read_env(".env")
 
 DEBUG = env.bool("DEBUG")
 BOT_TOKEN = env.str("BOT_TOKEN")
+BOT_NAME = env.str("BOT_NAME")
 BOT_WORKERS = env.int("BOT_WORKERS")
 
 DB_HOST = env.str("DB_HOST")

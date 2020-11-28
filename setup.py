@@ -23,8 +23,15 @@ setup(
         "urllib3==1.26.2",
         "psycopg2==2.8.6"
     ],
-    setup_requires=["pytest-runner", "flake8"],
-    tests_require=["pytest"],
+    setup_requires=[
+        "pytest-runner",
+        "flake8",
+    ],
+    tests_require=[
+        "pytest",
+        "pytest-asyncio-0.14.0",
+        "telethon==1.17.5",
+    ],
     entry_points={
         "console_scripts": ["apply-migrations=migrations.apply:main"]
     }

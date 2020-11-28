@@ -16,7 +16,7 @@ from dictionaries import states
 logger = logging.getLogger(__name__)
 
 
-def main():
+def main(blocking=True):
     updater = Updater(config.BOT_TOKEN, workers=config.BOT_WORKERS)
     dp = updater.dispatcher
 
@@ -59,15 +59,53 @@ def main():
                 pattern=states.AddLessonToTimetable.parse_pattern,
             )],
             states={
-                "read_lesson": [CallbackQueryHandler(
-                    commands.add_lesson_lesson_callback,
-                    pass_user_data=True,
-                )],
-                "read_teacher": [CallbackQueryHandler(
-                    commands.add_lesson_teacher_callback,
-                    pass_user_data=True,
-                )],
+                "read_lesson": [
+                    # cancel button
+                    CallbackQueryHandler(
+                        commands.cancel_add_lesson_callback,
+                        pattern=states.CancelAddLessonToTimetable.parse_pattern,
+                        pass_user_data=True,
+                    ),
+                    # response handler
+                    CallbackQueryHandler(
+                        commands.add_lesson_lesson_callback,
+                        pass_user_data=True,
+                    ),
+                ],
+                "read_lesson_type": [
+                    # cancel button
+                    CallbackQueryHandler(
+                        commands.cancel_add_lesson_callback,
+                        pattern=states.CancelAddLessonToTimetable.parse_pattern,
+                        pass_user_data=True,
+                    ),
+                    # response handler
+                    CallbackQueryHandler(
+                        commands.add_lesson_lesson_type_callback,
+                        pass_user_data=True,
+                    ),
+                ],
+                "read_teacher": [
+                    # cancel button
+                    CallbackQueryHandler(
+                        commands.cancel_add_lesson_callback,
+                        pattern=states.CancelAddLessonToTimetable.parse_pattern,
+                        pass_user_data=True,
+                    ),
+                    # response handler
+                    CallbackQueryHandler(
+                        commands.add_lesson_teacher_callback,
+                        pass_user_data=True,
+                    )
+                ],
                 "read_time": [
+                    # cancel button
+                    CallbackQueryHandler(
+                        commands.cancel_add_lesson_callback,
+                        pattern=states.CancelAddLessonToTimetable.parse_pattern,
+                        pass_user_data=True,
+                    ),
+                    # response handler
                     MessageHandler(
                         Filters.text,
                         commands.add_lesson_time,
@@ -75,14 +113,23 @@ def main():
                     ),
                 ],
             },
-            fallbacks=[],
+            fallbacks=[CallbackQueryHandler(
+                commands.cancel_add_lesson_callback,
+                pattern=states.CancelAddLessonToTimetable.parse_pattern,
+                pass_user_data=True,
+            )],
+            allow_reentry=True,
         ),
     )
 
     updater.start_polling()
 
-    # Bot gracefully stops on SIGINT, SIGTERM or SIGABRT.
-    updater.idle()
+    if blocking:
+        # Bot gracefully stops on SIGINT, SIGTERM or SIGABRT.
+        updater.idle()
+        return
+    else:
+        return updater
 
 
 if __name__ == '__main__':

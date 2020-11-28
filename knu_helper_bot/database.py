@@ -168,6 +168,11 @@ class Teacher(Base):
         return "<Lesson(id={}, first_name={}, last_name={}, middle_name={})>"\
             .format(self.id, self.first_name, self.last_name, self.middle_name)
 
+    @property
     def full_name(self):
         return " ".join((self.last_name, self.first_name, self.middle_name))
+
+    @property
+    def short_name(self):
+        return "{} {}. {}.".format(self.last_name, self.first_name[0], self.middle_name[0])
 

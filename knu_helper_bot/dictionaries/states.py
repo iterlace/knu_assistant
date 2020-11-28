@@ -46,3 +46,7 @@ EditTimetableDay = State("edit_timetable_day",
 AddLessonToTimetable = State("edit_timetable_day_add_lesson",
                              "edit_timetable_day_{}_add_lesson",
                              re.compile(r"^edit_timetable_day_(\d)_add_lesson$"))
+
+CancelAddLessonToTimetable = State("cancel_add_lesson_to_timetable",
+                                   "cancel_add_lesson_to_timetable",
+                                   re.compile(r"^cancel_add_lesson_to_timetable$"))
