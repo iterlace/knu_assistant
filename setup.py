@@ -36,7 +36,8 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "knu-apply-migrations=migrations.apply:main",
+            "knu_assistant_run_bot=assistant.bot.worker:run",
+            "knu_assistant_apply_migrations=migrations.apply:run",
         ]
     }
 )

@@ -10,5 +10,5 @@ alembic_args = [
 ]
 
 
-def main():
+def run():
     alembic.config.main(argv=alembic_args)
