@@ -18,12 +18,13 @@ from telegram.ext import (
 )
 from sqlalchemy.orm import Session
 
-from knu_helper_bot.config import bot
-from knu_helper_bot.database import User, StudentsGroup, Lesson, TimetableLesson, Teacher
-from knu_helper_bot.decorators import acquire_user, db_session
-from knu_helper_bot.dictionaries import states, days_of_week, timetable
-from knu_helper_bot.keyboards import build_keyboard_menu
-from knu_helper_bot.dictionaries.phrases import *
+from assistant.config import bot
+from assistant.database import User, StudentsGroup, Lesson, TimetableLesson, Teacher
+from assistant.bot.decorators import acquire_user, db_session
+from assistant.bot.dictionaries import states, days_of_week
+from assistant.bot.dictionaries import timetable
+from assistant.bot.keyboards import build_keyboard_menu
+from assistant.bot.dictionaries.phrases import *
 
 logger = logging.getLogger(__name__)
 __all__ = ["show_timetable", "edit_timetable", "add_lesson_callback", "add_lesson_teacher_callback",

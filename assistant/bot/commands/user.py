@@ -1,32 +1,20 @@
-
-import datetime as dt
 import logging
-import re
 
-import telegram as tg
 from telegram import (
     Update,
-    KeyboardButton,
-    ReplyKeyboardMarkup,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
 )
 from telegram.ext import (
-    Updater,
-    CommandHandler,
-    MessageHandler,
-    Filters,
-    CallbackQueryHandler,
     CallbackContext,
 )
 from sqlalchemy.orm import Session
 
-from knu_helper_bot.config import bot
-from knu_helper_bot.database import User, StudentsGroup, Lesson, TimetableLesson, Teacher
-from knu_helper_bot.decorators import acquire_user, db_session
-from knu_helper_bot.dictionaries import states, days_of_week, timetable
-from knu_helper_bot.keyboards import build_keyboard_menu
-from knu_helper_bot.dictionaries.phrases import *
+from assistant.config import bot
+from assistant.database import User, StudentsGroup
+from assistant.bot.decorators import acquire_user, db_session
+from assistant.bot.dictionaries import states
+from assistant.bot.keyboards import build_keyboard_menu
 
 logger = logging.getLogger(__name__)
 

@@ -10,13 +10,14 @@ from telegram.ext import (
     ConversationHandler,
 )
 
-from knu_helper_bot import config, commands, dictionaries
-from dictionaries import states
+from assistant import config
+from assistant.bot import commands
+from .dictionaries import states
 
 logger = logging.getLogger(__name__)
 
 
-def main(blocking=True):
+def run():
     updater = Updater(config.BOT_TOKEN, workers=config.BOT_WORKERS)
     dp = updater.dispatcher
 
@@ -124,12 +125,15 @@ def main(blocking=True):
 
     updater.start_polling()
 
-    if blocking:
+    try:
         # Bot gracefully stops on SIGINT, SIGTERM or SIGABRT.
         updater.idle()
-        return
-    else:
-        return updater
+    except ValueError as e:
+        if "signal only works in main thread" in str(e):
+            logger.warning(e)
+        else:
+            raise e
+    return
 
 
 if __name__ == '__main__':
@@ -137,4 +141,4 @@ if __name__ == '__main__':
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         level=logging.DEBUG if config.DEBUG else logging.INFO,
     )
-    main()
+    run()

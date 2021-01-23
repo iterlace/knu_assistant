@@ -8,8 +8,8 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from knu_helper_bot.database import Base
-import knu_helper_bot.config
+from assistant.database import Base
+import assistant.config
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -29,7 +29,7 @@ target_metadata = Base.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
-config.set_main_option('sqlalchemy.url', knu_helper_bot.config.DB_STRING)
+config.set_main_option('sqlalchemy.url', assistant.config.DB_STRING)
 
 
 def run_migrations_offline():

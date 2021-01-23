@@ -10,7 +10,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
-import knu_helper_bot.config as config
+import assistant.config as config
 
 logger = logging.getLogger(__name__)
 

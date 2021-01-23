@@ -2,16 +2,16 @@ from setuptools import setup
 from setuptools import find_packages
 
 setup(
-    name="knu_helper_bot",
+    name="KNU Assistant",
     version="0.0.1",
-    packages=find_packages(exclude=["tests"]),
+    packages=find_packages(exclude=["*tests*"]),
     package_data={"migrations": ["alembic.ini"]},
     url="",
     license="Apache License",
-    author="iterlace and the_Yttra",
+    author="iterlace",
     author_email="iterlace@gmail.com",
     description="",
-    python_requires=">=3.8",
+    python_requires="~=3.8",
     install_requires=[
         "python-telegram-bot==13.0",
         "SQLAlchemy==1.3.20",
@@ -29,10 +29,14 @@ setup(
     ],
     tests_require=[
         "pytest",
-        "pytest-asyncio-0.14.0",
+        # "pytest-mock~=3.5.1",
+        "mock==4.0.3",
+        "pytest-asyncio==0.14.0",
         "telethon==1.17.5",
     ],
     entry_points={
-        "console_scripts": ["apply-migrations=migrations.apply:main"]
+        "console_scripts": [
+            "knu-apply-migrations=migrations.apply:main",
+        ]
     }
 )

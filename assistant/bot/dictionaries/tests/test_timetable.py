@@ -1,9 +1,6 @@
-import re
-
 import pytest
-from pytest import mark
 
-from knu_helper_bot.dictionaries import timetable
+from assistant.bot.dictionaries import timetable
 
 
 class TestLessonType:
@@ -22,7 +19,10 @@ class TestLessonType:
 
 
 @pytest.mark.parametrize("value", [
-    "10:10 - 13:50", "10.10 - 13:50", "10.10 - 13.50", "  10:10-13:50  ",
+    "10:10 - 13:50",
+    "10.10 - 13:50",
+    "10.10 - 13.50",
+    "  10:10-13:50  ",
 ])
 def test_time_span_pattern(value):
     match = timetable.time_span_pattern.match(value)

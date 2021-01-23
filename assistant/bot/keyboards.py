@@ -4,8 +4,8 @@ import logging
 import telegram as tg
 from telegram import Bot, InlineKeyboardMarkup, InlineKeyboardButton
 
-from knu_helper_bot.config import bot
-from knu_helper_bot.database import Session, User
+from assistant.config import bot
+from assistant.database import Session, User
 
 logger = logging.getLogger(__name__)
 

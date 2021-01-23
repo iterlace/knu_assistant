@@ -1,10 +1,13 @@
 from functools import wraps
+import logging
 
 from telegram import Update
 from sqlalchemy.sql import select, insert, update, delete
 
-from database import Session
-from database import User
+from assistant.database import Session
+from assistant.database import User
+
+logger = logging.getLogger()
 
 
 def db_session(func):
@@ -14,11 +17,12 @@ def db_session(func):
     def inner(*args, **kwargs):
         if "session" in kwargs:
             return func(*args, **kwargs)
-
+        session = Session()
         kwargs.update({
-            "session": Session(),
+            "session": session,
         })
-        return func(*args, **kwargs)
+        output = func(*args, **kwargs)
+        return output
     return inner
 
 

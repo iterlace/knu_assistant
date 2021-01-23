@@ -1,6 +1,4 @@
-from pytest import mark
-
-from knu_helper_bot.dictionaries.days_of_week import DayOfWeek
+from assistant.bot.dictionaries import DayOfWeek
 
 
 class TestDayOfWeek:

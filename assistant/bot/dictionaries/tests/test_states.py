@@ -1,8 +1,6 @@
 import re
 
-from pytest import mark
-
-from knu_helper_bot.dictionaries.states import State
+from assistant.bot.dictionaries import State
 
 
 class TestState:
