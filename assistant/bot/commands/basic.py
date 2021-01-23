@@ -34,7 +34,6 @@ __all__ = ["start", "help"]
 @db_session
 @acquire_user
 def start(update: Update, ctx: CallbackContext, session: Session, user: User):
-    print("start session: {}".format(session))
     bot.sendMessage(update.effective_user.id, """
 Привіт!
     """)

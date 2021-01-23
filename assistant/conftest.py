@@ -41,7 +41,7 @@ def use_bot(db_session):
         """ Pushes session, controlled by the fixture """
         @wraps(func)
         def inner(*args, **kwargs):
-            print("mock_db_session called for {}".format(func))
+            # print("mock_db_session called for {}".format(func))
             kwargs["session"] = db_session
             return func(*args, **kwargs)
         return inner
