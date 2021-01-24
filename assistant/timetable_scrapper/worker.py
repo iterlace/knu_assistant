@@ -12,7 +12,7 @@ from assistant.database import Session
 from assistant.database import User, StudentsGroup, Faculty, Lesson, SingleLesson, Teacher
 
 logger = logging.getLogger(__name__)
-full_name_mask = re.compile(r"^\s*?([а-яїєі']+)\s*?([а-яїєі']+)\.?\s*?([а-яїєі']+)\.?$", re.I)
+full_name_mask = re.compile(r"^\s*?([а-яїєі']+)\s*?([а-яїєі']+)\.?\s*?([а-яїєі']+)\.?\s*?$", re.I)
 
 
 class TimetableScrapper:
