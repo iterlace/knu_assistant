@@ -1,4 +1,5 @@
 import os
+import sys
 import threading
 import pytest
 from pytest import mark
@@ -9,6 +10,7 @@ import logging
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session as SqaSession
 from alembic.command import upgrade as alembic_upgrade
 from alembic.config import Config as AlembicConfig
 from telethon import TelegramClient
@@ -22,6 +24,14 @@ logger = logging.getLogger(__name__)
 API_ID = int(os.environ["TELEGRAM_APP_ID"])
 API_HASH = os.environ["TELEGRAM_APP_HASH"]
 TG_SESSION = os.environ["TELETHON_SESSION"]
+
+
+def pytest_configure(config):
+    sys._called_from_test = True
+
+
+def pytest_unconfigure(config):
+    del sys._called_from_test
 
 
 def reload_db_session_decorator():
@@ -102,7 +112,7 @@ def db():
 
 
 @pytest.fixture(scope="function")
-def db_session(db):
+def db_session(db) -> SqaSession:
     session = db["session_factory"]()
     session.begin_nested()  # Savepoint
     yield session

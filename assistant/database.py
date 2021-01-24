@@ -5,7 +5,8 @@ import sqlalchemy as sqa
 from sqlalchemy import create_engine
 from sqlalchemy import MetaData, Table, Column, Sequence, UniqueConstraint
 from sqlalchemy.sql.sqltypes import *
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects import postgresql as pg
+from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
@@ -72,23 +73,56 @@ class StudentsGroup(Base):
         String,
         nullable=False,
     )
+    course = Column(
+        Integer,
+        nullable=False,
+    )
+    faculty_id = Column(
+        Integer,
+        ForeignKey("faculties.id"),
+        nullable=False,
+    )
 
     students = relationship("User", order_by=User.tg_id, back_populates="students_group")
-    timetable_lessons = relationship("TimetableLesson", back_populates="students_group")
+    lessons = relationship("Lesson", back_populates="students_group")
+    faculty = relationship("Faculty", back_populates="groups")
 
     def __repr__(self):
         return "<StudentsGroup(id={}, name={})>".format(self.id, self.name)
 
 
-class TimetableLesson(Base):
-    __tablename__ = "timetable_lessons"
+class Faculty(Base):
+    __tablename__ = "faculties"
 
     id = Column(
         Integer,
         primary_key=True,
     )
-    day_of_week = Column(
-        SmallInteger,
+    name = Column(
+        String,
+        nullable=False,
+        unique=True,
+    )
+    shortcut = Column(
+        String,
+        nullable=False,
+    )
+
+    groups = relationship("StudentsGroup", back_populates="faculty")
+
+    def __repr__(self):
+        return "<Faculty(id={}, name={})>".format(self.id, self.name)
+
+
+class SingleLesson(Base):
+    __tablename__ = "single_lessons"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+    )
+    date = Column(
+        Date,
         nullable=False,
     )
     starts_at = Column(
@@ -99,33 +133,28 @@ class TimetableLesson(Base):
         Time,
         nullable=False,
     )
-    students_group_id = Column(
-        Integer,
-        ForeignKey("students_groups.id"),
-        nullable=False,
-    )
-    teacher_id = Column(
-        Integer,
-        ForeignKey("teachers.id"),
-        nullable=False,
-    )
     lesson_id = Column(
         Integer,
         ForeignKey("lessons.id"),
         nullable=False,
     )
 
-    students_group = relationship("StudentsGroup", back_populates="timetable_lessons")
-    teacher = relationship("Teacher")
     lesson = relationship("Lesson")
 
     __table_args__ = (
-        # UniqueConstraint("day_of_week", "students_group_id", name="timetable_dow_students_group_key"),
+        UniqueConstraint("lesson_id", "date", "starts_at", "ends_at", name="timetable_lesson_complex_key"),
     )
 
     def __repr__(self):
-        return "<TimetableDay(id={}, day_of_week={}, group={})>"\
-            .format(self.id, self.day_of_week, self.students_group_id)
+        return "<SingleLesson(id={}, date={}, starts_at={})>"\
+            .format(self.id, self.date, self.starts_at)
+
+
+LessonTeacher = Table(
+    "lessons_teachers", Base.metadata,
+    Column("lesson_id", Integer, ForeignKey("lessons.id")),
+    Column("teacher_id", Integer, ForeignKey("teachers.id")),
+)
 
 
 class Lesson(Base):
@@ -138,6 +167,30 @@ class Lesson(Base):
     name = Column(
         String,
         nullable=False,
+    )
+    students_group_id = Column(
+        Integer,
+        ForeignKey("students_groups.id"),
+        nullable=False,
+    )
+    subgroup = Column(
+        String,
+        nullable=True,
+    )
+    lesson_format = Column(
+        Integer,
+        nullable=False,
+    )
+    teachers = relationship(
+        "Teacher",
+        secondary=LessonTeacher,
+        backref="lessons",
+    )
+
+    students_group = relationship("StudentsGroup", back_populates="lessons")
+
+    __table_args__ = (
+        UniqueConstraint("name", "subgroup", "students_group_id", "lesson_format", name="lesson_complex_key"),
     )
 
     def __repr__(self):

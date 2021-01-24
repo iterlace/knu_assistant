@@ -1,3 +1,4 @@
+from logging.config import dictConfig
 
 from telegram import Bot
 from environs import Env
@@ -26,3 +27,42 @@ DB_STRING = "postgresql+psycopg2://{user}:{password}@{host}:{port}/{name}".forma
 )
 
 bot = Bot(token=BOT_TOKEN)
+
+dictConfig({
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s - [%(levelname)s] %(name)s [%(module)s.%(funcName)s:%(lineno)d]: %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        }
+    },
+    "handlers": {
+        "default": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        },
+    },
+    "loggers": {
+        "": {
+            "handlers": ["default"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "assistant": {
+            "handlers": ["default"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "__main__": {  # if __name__ == "__main__"
+            "handlers": ["default"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+    },
+    "root": {
+        "level": "WARNING",
+        "handlers": ["default"],
+    },
+})
