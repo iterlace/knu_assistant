@@ -1,4 +1,5 @@
 import re
+import enum
 
 
 class State(str):
@@ -26,27 +27,19 @@ class State(str):
 
 EmptyStep = State('')
 
-# User selects his own group
-# 1 argument: group id
-UserSelectStudentsGroupStep = State("user_select_students_group",
-                                    "user_select_students_group_{}",
-                                    re.compile(r"^user_select_students_group_(.*)$"))
+# User selects their course
+UserSelectCourse = State("select_student_course",
+                         "{}",
+                         re.compile(r"^(\d+)$"))
 
-# Administrator edits a whole timetable
-EditTimetable = State("edit_timetable",
-                      "edit_timetable",
-                      re.compile(r"^edit_timetable$"))
-# Administrator edits a day in a timetable
-# 1 argument: day idx
-EditTimetableDay = State("edit_timetable_day",
-                         "edit_timetable_day_{}",
-                         re.compile(r"^edit_timetable_day_(\d)$"))
-# Administrator edits a day in a timetable
-# 1 argument: day idx
-AddLessonToTimetable = State("edit_timetable_day_add_lesson",
-                             "edit_timetable_day_{}_add_lesson",
-                             re.compile(r"^edit_timetable_day_(\d)_add_lesson$"))
+# User selects their faculty
+UserSelectFaculty = State("select_student_faculty",
+                          "{}",
+                          re.compile(r"^(\d+)$"))
 
-CancelAddLessonToTimetable = State("cancel_add_lesson_to_timetable",
-                                   "cancel_add_lesson_to_timetable",
-                                   re.compile(r"^cancel_add_lesson_to_timetable$"))
+# User selects their faculty
+UserSelectGroup = State("select_student_group",
+                        "{}",
+                        re.compile(r"^(\d+)$"))
+
+END = State("end", "end", re.compile("^end$"))
