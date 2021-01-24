@@ -126,7 +126,6 @@ class TimetableScrapper:
             else:
                 continue
         self.db.commit()
-        # print(timetable)
 
     def get(self, url: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         if params is not None and len(params) > 0:
