@@ -7,8 +7,10 @@ from functools import wraps
 import mock
 import importlib
 import logging
+from typing import List, Tuple, Optional, Any
 
 from sqlalchemy import create_engine
+from sqlalchemy import event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import Session as SqaSession
 from alembic.command import upgrade as alembic_upgrade
@@ -37,7 +39,7 @@ def pytest_unconfigure(config):
 def reload_db_session_decorator():
     import assistant
     importlib.reload(assistant.bot.commands.basic)
-    importlib.reload(assistant.bot.commands.timetable)
+    # importlib.reload(assistant.bot.commands.timetable)
     importlib.reload(assistant.bot.commands.user)
     importlib.reload(assistant.bot.commands)
 
@@ -114,7 +116,94 @@ def db():
 def db_session(db) -> SqaSession:
     session = db["session_factory"]()
     session.begin_nested()  # Savepoint
+
+    @event.listens_for(session, "after_transaction_end")
+    def restart_savepoint(session, transaction):
+        """ Each time that SAVEPOINT ends, reopen it """
+        if transaction.nested and not transaction._parent.nested:
+            session.begin_nested()
+
     yield session
     session.rollback()
     session.close()
+
+
+@pytest.fixture(scope="function")
+def fill_teachers(db_session):
+    from assistant.database import Teacher
+
+    peterson = Teacher(first_name="Bob", middle_name="Fitzgerald", last_name="Peterson")
+    smith = Teacher(first_name="Mary", middle_name="Elizabeth", last_name="Smith")
+
+    db_session.add(peterson)
+    db_session.add(smith)
+    db_session.commit()
+
+    yield [peterson, smith]
+
+
+@pytest.fixture(scope="function")
+def fill_faculties(db_session):
+    from assistant.database import Faculty
+
+    csc = Faculty(name="Computer Science and Cybernetics", shortcut="CSC")
+
+    db_session.add(csc)
+    db_session.commit()
+
+    yield [csc]
+
+
+@pytest.fixture(scope="function")
+def fill_groups(db_session, fill_faculties):
+    from assistant.database import StudentsGroup
+
+    K11 = StudentsGroup(name="K-11", course=1, faculty=fill_faculties[0])
+    K12 = StudentsGroup(name="K-12", course=1, faculty=fill_faculties[0])
+
+    db_session.add(K11)
+    db_session.add(K12)
+    db_session.commit()
+
+    yield [K11, K12]
+
+
+@pytest.fixture(scope="function")
+def fill_lessons(db_session, fill_teachers, fill_groups):
+    from assistant.database import Lesson, Teacher
+
+    algebra_lecture = Lesson(
+        name="Algebra",
+        students_group=fill_groups[0],
+        subgroup=None,
+        lesson_format=0,
+        teachers=[fill_teachers[0]],
+    )
+    algebra_practice_1 = Lesson(
+        name="Algebra",
+        students_group=fill_groups[0],
+        subgroup="1",
+        lesson_format=2,
+        teachers=[fill_teachers[0]],
+    )
+    algebra_practice_2 = Lesson(
+        name="Algebra",
+        students_group=fill_groups[0],
+        subgroup="2",
+        lesson_format=2,
+        teachers=[fill_teachers[1]],
+    )
+
+    db_session.add(algebra_lecture)
+    db_session.add(algebra_practice_1)
+    db_session.add(algebra_practice_2)
+    db_session.commit()
+
+    yield [algebra_lecture, algebra_practice_1, algebra_practice_2]
+
+
+# @pytest.fixture(scope="function")
+# def fill_single_lessons(db_session, fill_lessons):
+#     from assistant.database import SingleLesson, Lesson
+#     # TODO
 

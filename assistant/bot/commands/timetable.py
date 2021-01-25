@@ -1,4 +1,3 @@
-
 import datetime as dt
 import logging
 import re
@@ -75,10 +74,9 @@ cancel_add_lesson_button = InlineKeyboardButton(
 @acquire_user
 def show_timetable(update: Update, ctx: CallbackContext, session: Session, user: User):
     if not update.callback_query:
-        bot.sendMessage(update.effective_user.id,
-                        text=build_timetable_week(user.students_group, session),
-                        parse_mode=ParseMode.HTML)
-
+        bot.send_message(update.effective_user.id,
+                         text=build_timetable_week(user.students_group, session),
+                         parse_mode=ParseMode.HTML)
 
 # @db_session
 # @acquire_user
@@ -91,7 +89,7 @@ def show_timetable(update: Update, ctx: CallbackContext, session: Session, user:
 #                 text="{} {}".format(e_pencil, day.name),
 #                 callback_data=states.EditTimetableDay.build_pattern.format(day),
 #             ))
-#         bot.sendMessage(update.effective_user.id,
+#         bot.send_message(update.effective_user.id,
 #                         text=build_timetable_week(user.students_group, session),
 #                         reply_markup=InlineKeyboardMarkup(build_keyboard_menu(kb_buttons, 2)),
 #                         parse_mode=ParseMode.HTML)
@@ -106,7 +104,7 @@ def show_timetable(update: Update, ctx: CallbackContext, session: Session, user:
 #             text="{} {}".format(e_pencil, day.name),
 #             callback_data=states.EditTimetableDay.build_pattern.format(day),
 #         ))
-#     bot.editMessageText(
+#     bot.edit_message_text(
 #         chat_id=update.effective_user.id,
 #         message_id=update.callback_query.message.message_id,
 #         text=build_timetable_week(user.students_group, session),
@@ -131,7 +129,7 @@ def show_timetable(update: Update, ctx: CallbackContext, session: Session, user:
 #         n_cols=2,
 #     ))
 #     # TODO: iterate over existing lessons
-#     bot.editMessageText(
+#     bot.edit_message_text(
 #         chat_id=update.effective_user.id,
 #         message_id=update.callback_query.message.message_id,
 #         text=build_timetable_day(user.students_group, session, day) or "Пари відсутні",
@@ -157,7 +155,7 @@ def show_timetable(update: Update, ctx: CallbackContext, session: Session, user:
 #         n_cols=2,
 #     ))
 #     # TODO: iterate over existing lessons
-#     bot.editMessageText(
+#     bot.edit_message_text(
 #         chat_id=update.effective_user.id,
 #         message_id=update.callback_query.message.message_id,
 #         text="{} Який предмет додамо?".format(e_books),
@@ -188,14 +186,14 @@ def show_timetable(update: Update, ctx: CallbackContext, session: Session, user:
 #         footer_buttons=[cancel_add_lesson_button],
 #         n_cols=2,
 #     ))
-#     bot.editMessageText(
+#     bot.edit_message_text(
 #         chat_id=update.effective_user.id,
 #         message_id=update.callback_query.message.message_id,
 #         text="Предмет - {}".format(lesson.name),
 #         reply_markup=None,
 #         parse_mode=ParseMode.HTML,
 #     )
-#     bot.sendMessage(
+#     bot.send_message(
 #         chat_id=update.effective_user.id,
 #         text="{} Який вид заняття?".format(e_person),
 #         reply_markup=keyboard,
@@ -221,14 +219,14 @@ def show_timetable(update: Update, ctx: CallbackContext, session: Session, user:
 #         footer_buttons=[cancel_add_lesson_button],
 #         n_cols=2,
 #     ))
-#     bot.editMessageText(
+#     bot.edit_message_text(
 #         chat_id=update.effective_user.id,
 #         message_id=update.callback_query.message.message_id,
 #         text="Тип предмету - {}".format(timetable.LESSON_TYPES[lesson_type].name),
 #         reply_markup=None,
 #         parse_mode=ParseMode.HTML,
 #     )
-#     bot.sendMessage(
+#     bot.send_message(
 #         chat_id=update.effective_user.id,
 #         text="{} Хто викладає?".format(e_person),
 #         reply_markup=keyboard,
@@ -254,7 +252,7 @@ def show_timetable(update: Update, ctx: CallbackContext, session: Session, user:
 #         n_cols=2,
 #     ))
 #
-#     bot.editMessageText(
+#     bot.edit_message_text(
 #         chat_id=update.effective_user.id,
 #         message_id=update.callback_query.message.message_id,
 #         text="Викладач - {}".format(teacher.full_name),
@@ -262,7 +260,7 @@ def show_timetable(update: Update, ctx: CallbackContext, session: Session, user:
 #         parse_mode=ParseMode.HTML,
 #     )
 #     # TODO: iterate over existing lessons
-#     bot.sendMessage(
+#     bot.send_message(
 #         chat_id=update.effective_user.id,
 #         text="{} О котрій проводиться пара?\n"
 #              "Записуйте розклад у вигляді \"8:40 - 10:15\".".format(e_clock),
@@ -281,7 +279,7 @@ def show_timetable(update: Update, ctx: CallbackContext, session: Session, user:
 #             footer_buttons=[cancel_add_lesson_button],
 #             n_cols=2,
 #         ))
-#         bot.sendMessage(
+#         bot.send_message(
 #             chat_id=update.effective_user.id,
 #             text="Некоректний формат!\nЗаписуйте розклад у вигляді \"8:40 - 10:15\".",
 #             reply_markup=keyboard,
@@ -313,7 +311,7 @@ def show_timetable(update: Update, ctx: CallbackContext, session: Session, user:
 #     session.commit()
 #
 #     # TODO: iterate over existing lessons
-#     bot.sendMessage(
+#     bot.send_message(
 #         chat_id=update.effective_user.id,
 #         text="Предмет додано:\n{}".format(build_timetable_lesson(created_lesson)),
 #         reply_markup=keyboard,
@@ -326,11 +324,10 @@ def show_timetable(update: Update, ctx: CallbackContext, session: Session, user:
 # def cancel_add_lesson_callback(update: Update, ctx: CallbackContext, session: Session, user: User):
 #     ctx.user_data.clear()
 #
-#     bot.editMessageText(
+#     bot.edit_message_text(
 #         chat_id=update.effective_user.id,
 #         message_id=update.callback_query.message.message_id,
 #         text="Скасовано",
 #         reply_markup=None,
 #     )
 #     return ConversationHandler.END
-

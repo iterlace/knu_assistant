@@ -9,3 +9,4 @@ e_question = u"\U00002753"
 e_books = u"\U0001F4DA"
 e_person = u"\U0001F9D4"
 
+p_cancel = "{} Скасувати".format(e_cancel)

@@ -227,3 +227,5 @@ class TestTimetableScrapper:
         assert teacher.first_name == "Юрій"
         assert teacher.last_name == "Коваль"
         assert teacher.middle_name == "Віталійович"
+
+        # TODO: test dates and lesson start/end time

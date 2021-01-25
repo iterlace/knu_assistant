@@ -28,7 +28,6 @@ class TimetableScrapper:
         self.session.close()
 
     def run(self):
-        timetable = dict()  # {group: {(theme, teachers, subgroup, format): [raw_lessons]}}
         self.db.query(SingleLesson).delete()
 
         raw_groups = self.get("https://api.mytimetable.live/rest/groups/", {"univ": 1})
@@ -61,14 +60,14 @@ class TimetableScrapper:
                         faculty=faculty,
                     )
                     self.db.add(group)
-                group_timetable = timetable.setdefault(raw_group["name"], dict())
+                group_timetable = dict()  # {(theme, teachers, subgroup, format): [raw_lessons]}
 
                 for raw_lesson in raw_timetable["lessons"]:
-                    subgroup = raw_lesson["subgroup"] or None
+                    subgroup = (raw_lesson["subgroup"] or "").strip() or None
 
                     # Unique Lesson key
                     lesson_key = (raw_lesson["name_full"], subgroup, raw_lesson["format"])
-                    if lesson_key not in group_timetable.keys():
+                    if group_timetable.get(lesson_key, None) is None:
                         lesson = self.db.query(Lesson).filter_by(
                             name=raw_lesson["name_full"],
                             students_group=group,
@@ -109,7 +108,7 @@ class TimetableScrapper:
                     for lesson_time in raw_timetable["lesson_time"]:
                         if lesson_time["id"] == raw_lesson["lesson_time"]:
                             starts_at = dt.datetime.strptime(lesson_time["start"], "%H:%M").time()
-                            ends_at = dt.datetime.strptime(lesson_time["start"], "%H:%M").time()
+                            ends_at = dt.datetime.strptime(lesson_time["end"], "%H:%M").time()
                             break
 
                     for date in raw_lesson["dates"]:

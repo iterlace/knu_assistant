@@ -1,6 +1,8 @@
 import re
 import enum
 
+from telegram.ext import ConversationHandler
+
 
 class State(str):
     parse_pattern = None
@@ -42,4 +44,5 @@ UserSelectGroup = State("select_student_group",
                         "{}",
                         re.compile(r"^(\d+)$"))
 
-END = State("end", "end", re.compile("^end$"))
+END = ConversationHandler.END
+

@@ -1,4 +1,3 @@
-
 import logging
 
 from telegram.ext import (
@@ -21,6 +20,7 @@ def run():
     updater = Updater(config.BOT_TOKEN, workers=config.BOT_WORKERS)
     dp = updater.dispatcher
 
+    # /change_group
     select_group_handler = ConversationHandler(
         entry_points=[CommandHandler("change_group", commands.change_group)],
         states={
@@ -32,19 +32,33 @@ def run():
                                                           pattern=states.UserSelectGroup.parse_pattern)],
         },
         fallbacks=[
-            # TODO: "/stop" command or "end" callback handler
+            CallbackQueryHandler(commands.home, pattern=r"^{}$".format(states.END))
         ]
     )
     dp.add_handler(select_group_handler)
 
-    conv_handler = ConversationHandler(
+    # /start
+    start_handler = ConversationHandler(
         entry_points=[CommandHandler("start", commands.start)],
         states=select_group_handler.states,
-        fallbacks=[
-
-        ]
+        fallbacks=[],
     )
-    dp.add_handler(conv_handler)
+    dp.add_handler(start_handler)
+
+    # /home
+    home_handler = ConversationHandler(
+        entry_points=[
+            CommandHandler("home", commands.home),
+            # somehow add a global END handler?
+        ],
+        states={
+
+        },
+        fallbacks=[],
+    )
+    dp.add_handler(home_handler)
+
+    # /help
     dp.add_handler(CommandHandler("help", commands.help))
 
     # # Managing user's group
@@ -143,15 +157,15 @@ def run():
         updater.idle()
     except ValueError as e:
         if "signal only works in main thread" in str(e):
-            logger.warning(e)
+            print(e)
         else:
             raise e
     return
 
 
 if __name__ == '__main__':
-    logging.basicConfig(
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        level=logging.DEBUG if config.DEBUG else logging.INFO,
-    )
+    # logging.basicConfig(
+    #     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    #     level=logging.DEBUG if config.DEBUG else logging.INFO,
+    # )
     run()

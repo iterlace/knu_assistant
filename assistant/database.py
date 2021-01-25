@@ -34,15 +34,20 @@ class User(Base):
         String,
         nullable=False,
     )
+    students_group_id = Column(
+        Integer,
+        ForeignKey("students_groups.id"),
+        nullable=True,
+    )
     is_admin = Column(
         Boolean,
         nullable=False,
         default=False,
     )
-    students_group_id = Column(
-        Integer,
-        ForeignKey("students_groups.id"),
-        nullable=True,
+    is_group_moderator = Column(
+        Boolean,
+        nullable=False,
+        default=False,
     )
     current_state = Column(
         String,
@@ -177,6 +182,7 @@ class Lesson(Base):
         String,
         nullable=True,
     )
+    # 0 - lecture, 1 - seminar, 2 - practical, 3 - lab, 4 - other
     lesson_format = Column(
         Integer,
         nullable=False,
