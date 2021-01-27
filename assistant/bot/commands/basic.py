@@ -77,6 +77,5 @@ def home(update: Update, ctx: CallbackContext, session: Session, user: User):
         bot.send_message(update.effective_user.id, "Welcome home!")
 
 
-
 def help(update: Update, ctx: CallbackContext):
     update.message.reply_text(HELLO_MESSAGE)

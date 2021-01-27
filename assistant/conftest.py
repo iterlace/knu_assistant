@@ -169,6 +169,22 @@ def fill_groups(db_session, fill_faculties):
 
 
 @pytest.fixture(scope="function")
+def fill_users(db_session, fill_groups):
+    from assistant.database import User
+
+    mike = User(tg_id=800000000, tg_username="mike", students_group=fill_groups[0])
+    george = User(tg_id=800000001, tg_username="george", students_group=fill_groups[0])
+    jane = User(tg_id=800000002, tg_username="jane", students_group=fill_groups[1])
+
+    db_session.add(mike)
+    db_session.add(george)
+    db_session.add(jane)
+    db_session.commit()
+
+    yield [mike, george, jane]
+
+
+@pytest.fixture(scope="function")
 def fill_lessons(db_session, fill_teachers, fill_groups):
     from assistant.database import Lesson, Teacher
 

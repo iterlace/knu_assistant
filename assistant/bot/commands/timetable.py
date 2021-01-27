@@ -18,7 +18,7 @@ from telegram.ext import (
 from sqlalchemy.orm import Session
 
 from assistant.config import bot
-from assistant.database import User, StudentsGroup, Lesson, TimetableLesson, Teacher
+from assistant.database import User, StudentsGroup, Lesson, SingleLesson, Teacher
 from assistant.bot.decorators import acquire_user, db_session
 from assistant.bot.dictionaries import states, days_of_week
 from assistant.bot.dictionaries import timetable
@@ -29,45 +29,51 @@ logger = logging.getLogger(__name__)
 __all__ = ["show_timetable"]
 
 
-def build_timetable_lesson(lesson: TimetableLesson):
-    result_str = ""
-    result_str += "{} {} - {}\n{} <b>{}</b>  {} {}\n".format(
+def build_timetable_lesson(session: Session, user: User, lesson: SingleLesson):
+    teachers_names = [t.short_name for t in lesson.lesson.teachers]
+    teachers_formatted = "{emoji} {teachers}".format(emoji=e_person,
+                                                     teachers=f"{e_person} ".join(teachers_names))
+    result_str = "{} {} - {}\n{} <b>{}</b>  {}".format(
         e_clock, lesson.starts_at.strftime("%H:%M"), lesson.ends_at.strftime("%H:%M"),
         e_books, lesson.lesson.name,
-        e_person, lesson.teacher.short_name
+        teachers_formatted
     )
     return result_str
 
 
-def build_timetable_day(group: StudentsGroup, session: Session, day: int):
+def build_timetable_day(session: Session, user: User, date: dt.date):
     lessons = (
         session
-        .query(TimetableLesson)
-        .filter(
-            (TimetableLesson.students_group_id == group.id) &
-            (TimetableLesson.day_of_week == day)
+        .query(SingleLesson)
+        .join(
+            SingleLesson.lesson
         )
-        .order_by("starts_at", "teacher_id")
+        .filter(
+            (Lesson.students_group_id == user.students_group_id) &
+            (SingleLesson.date == date)
+        )
+        .order_by("starts_at")
         .all()
     )
     result_str = ""
     for lesson in lessons:
-        result_str += "{}\n".format(build_timetable_lesson(lesson))
+        result_str += "{}\n\n".format(build_timetable_lesson(session, user, lesson))
+    result_str = result_str[:-2]  # remove two last \n
     return result_str
 
 
 def build_timetable_week(group: StudentsGroup, session: Session):
     lessons_str = ""
     for day in days_of_week.DAYS_OF_WEEK:
-        lessons_str += "[ <b>{}</b> ]\n\n{}\n".format(day.name, build_timetable_day(group, session, day))
+        lessons_str += "[ <b>{}</b> ]\n\n{}\n".format(day.name, build_timetable_day(session, group, day))
     return lessons_str
 
 
-# Buttons
-cancel_add_lesson_button = InlineKeyboardButton(
-    text="{} Скасувати".format(e_cancel),
-    callback_data=states.CancelAddLessonToTimetable.build_pattern,
-)
+# # Buttons
+# cancel_add_lesson_button = InlineKeyboardButton(
+#     text="{} Скасувати".format(e_cancel),
+#     callback_data=states.CancelAddLessonToTimetable.build_pattern,
+# )
 
 
 @db_session
