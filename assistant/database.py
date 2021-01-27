@@ -9,7 +9,7 @@ from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import sessionmaker, relationship, backref
 
 import assistant.config as config
 
@@ -62,6 +62,10 @@ class User(Base):
     )
 
     students_group = relationship("StudentsGroup", back_populates="students")
+    subgroups = relationship("Lesson",
+                             secondary="lessons_subgroups_members",
+                             backref=backref("students", lazy="dynamic"),
+                             )
 
     def __repr__(self):
         return "<User(tg_id={}, tg_username={})".format(self.tg_id, self.tg_username)
@@ -151,14 +155,22 @@ class SingleLesson(Base):
     )
 
     def __repr__(self):
-        return "<SingleLesson(id={}, date={}, starts_at={})>"\
-            .format(self.id, self.date, self.starts_at)
+        return "<SingleLesson(id={}, lesson_id={}, date={}, starts_at={})>"\
+            .format(self.id, self.lesson_id, self.date, self.starts_at)
 
 
 LessonTeacher = Table(
     "lessons_teachers", Base.metadata,
     Column("lesson_id", Integer, ForeignKey("lessons.id")),
     Column("teacher_id", Integer, ForeignKey("teachers.id")),
+)
+
+
+# If lesson is divided into subgroups, match each one with its members (users)
+LessonSubgroupMember = Table(
+    "lessons_subgroups_members", Base.metadata,
+    Column("lesson_id", Integer, ForeignKey("lessons.id")),
+    Column("user_id", Integer, ForeignKey("users.tg_id")),
 )
 
 
