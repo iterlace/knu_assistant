@@ -39,10 +39,17 @@ UserSelectFaculty = State("select_student_faculty",
                           "{}",
                           re.compile(r"^(\d+)$"))
 
-# User selects their faculty
+# User selects their group
 UserSelectGroup = State("select_student_group",
                         "{}",
                         re.compile(r"^(\d+)$"))
+
+
+# User selects their subgroups
+UserSelectSubgroups = State("select_subgroups",
+                            "{}",
+                            re.compile(r"^(\w+)$"))
+
 
 END = ConversationHandler.END
 

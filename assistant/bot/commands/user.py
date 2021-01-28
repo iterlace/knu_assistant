@@ -9,10 +9,11 @@ from telegram.ext import (
     CallbackContext,
 )
 import sqlalchemy as sqa
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from assistant.config import bot
-from assistant.database import User, StudentsGroup, Faculty
+from assistant.database import User, StudentsGroup, Faculty, Lesson, LessonTeacher, LessonSubgroupMember
 from assistant.bot.decorators import acquire_user, db_session
 from assistant.bot.dictionaries import states
 from assistant.bot.dictionaries.phrases import *
@@ -62,11 +63,12 @@ def select_course(update: Update, ctx: CallbackContext, session: Session, user: 
     if user.students_group_id is not None:
         kb_footer = [InlineKeyboardButton(text=p_cancel, callback_data=states.END)]
 
-    update.callback_query.answer()
     keyboard = build_keyboard_menu(kb_buttons, 4, footer_buttons=kb_footer)
-    bot.edit_message_reply_markup(update.effective_user.id, update.callback_query.message.message_id, reply_markup=None)
-    bot.send_message(update.effective_user.id, "На якому факультеті?",
-                     reply_markup=InlineKeyboardMarkup(keyboard))
+    update.callback_query.answer()
+    update.callback_query.edit_message_text(
+        "На якому факультеті?",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
     return states.UserSelectFaculty
 
 
@@ -94,9 +96,10 @@ def select_faculty(update: Update, ctx: CallbackContext, session: Session, user:
 
     update.callback_query.answer()
     keyboard = build_keyboard_menu(kb_buttons, 4, footer_buttons=kb_footer)
-    bot.edit_message_reply_markup(update.effective_user.id, update.callback_query.message.message_id, reply_markup=None)
-    bot.send_message(update.effective_user.id, "Обери свою групу",
-                     reply_markup=InlineKeyboardMarkup(keyboard))
+    update.callback_query.edit_message_text(
+        "Обери свою групу",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
     return states.UserSelectGroup
 
 
@@ -108,11 +111,109 @@ def select_group(update: Update, ctx: CallbackContext, session: Session, user: U
         return  # TODO: handle error
     ctx.user_data["group_id"] = update.callback_query.data
 
-    # Attach the group to the user
-    group = session.query(StudentsGroup).get(ctx.user_data["group_id"])
-    user.students_group = group
-    session.commit()
     update.callback_query.answer()
-    bot.edit_message_reply_markup(update.effective_user.id, update.callback_query.message.message_id, reply_markup=None)
-    bot.send_message(update.effective_user.id, "Групу {} встановлено!".format(group.name))
-    return states.END
+    update.callback_query.edit_message_text("Групу встановлено!", reply_markup=None)
+    update.callback_query = None
+    return select_subgroups(update=update, ctx=ctx, session=session, user=user)
+
+
+@db_session
+@acquire_user
+def select_subgroups(update: Update, ctx: CallbackContext, session: Session, user: User):
+    # list of already chosen subgroups (Lesson) to exclude them in further steps
+    ctx.user_data.setdefault("subgroups", list())
+    # lesson that is being selected by the user (tuple of (name, lesson_format))
+    ctx.user_data.setdefault("current_subgroup_lesson", None)
+
+    # if "select_subgroups" called from "select_group"
+    if update.callback_query is None:
+        ctx.user_data["current_subgroup_lesson"] = None
+    else:
+        lesson_name, lesson_format = ctx.user_data["current_subgroup_lesson"]
+        subgroup = update.callback_query.data
+        lesson = session.query(Lesson).filter(
+            Lesson.students_group_id == ctx.user_data["group_id"],
+            Lesson.subgroup == subgroup,
+            Lesson.name == lesson_name,
+            Lesson.lesson_format == lesson_format,
+        ).first()
+        if not lesson:
+            return  # TODO: handle error
+        ctx.user_data["subgroups"].append(lesson)
+        update.callback_query.answer()
+
+    # filters to exclude already selected groups from the InputKeyboard
+    filters = []
+    for lesson in ctx.user_data["subgroups"]:
+        filters.append(~(
+            (Lesson.name==lesson.name) &
+            (Lesson.lesson_format==lesson.lesson_format)
+        ))
+    # remaining lessons
+    lessons = (
+        session
+        .query(Lesson.name, Lesson.lesson_format)
+        .filter(
+            Lesson.students_group_id==ctx.user_data["group_id"],
+            *filters,
+        )
+        .group_by(Lesson.name, Lesson.students_group_id, Lesson.lesson_format)
+        .having(func.count(1) > 1)
+        .all()
+    )
+
+    if lessons:
+        lesson_name, lesson_format = lessons[0]
+        ctx.user_data["current_subgroup_lesson"] = (lesson_name, lesson_format)
+
+        # Ask for a group
+        kb_buttons = []
+        for subgroup in session.query(Lesson) \
+                .filter_by(students_group_id=ctx.user_data["group_id"],
+                           name=lesson_name, lesson_format=lesson_format) \
+                .order_by(Lesson.subgroup):
+            teachers = []
+            for teacher in subgroup.teachers:
+                teachers.append(teacher.short_name)
+            kb_buttons.append(InlineKeyboardButton(
+                text="[{subgroup}] {teachers}".format(subgroup=subgroup.subgroup,
+                                                      teachers=", ".join(teachers)),
+                callback_data=subgroup.subgroup,
+            ))
+        kb_footer = None
+        if user.students_group_id is not None:
+            kb_footer = [InlineKeyboardButton(text=p_cancel, callback_data=states.END)]
+        keyboard = build_keyboard_menu(kb_buttons, n_cols=2, footer_buttons=kb_footer)
+
+        if update.callback_query is not None:
+            update.callback_query.edit_message_text(
+                # TODO: lesson_format representation
+                text="Обери свою підгрупу з {} ({})".format(lesson_name, lesson_format),
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+        else:
+            bot.send_message(
+                update.effective_user.id,
+                text="Обери свою підгрупу з {} ({})".format(lesson_name, lesson_format),
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+        return states.UserSelectSubgroups
+    else:
+        # if all subgroups were selected - push all changes to the database
+
+        # attach the group to the user
+        group = session.query(StudentsGroup).get(ctx.user_data["group_id"])
+        user.students_group = group
+
+        user.subgroups.clear()
+        for lesson in ctx.user_data["subgroups"]:
+            lesson = session.merge(lesson)
+            user.subgroups.append(lesson)
+        session.commit()
+        if update.callback_query is not None and len(user.subgroups) > 0:
+            update.callback_query.edit_message_text(
+                text="Підгрупи визначено!",
+                reply_markup=None
+            )
+        return states.END
+

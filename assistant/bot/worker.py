@@ -30,6 +30,8 @@ def run():
                                                             pattern=states.UserSelectFaculty.parse_pattern)],
             states.UserSelectGroup: [CallbackQueryHandler(commands.select_group,
                                                           pattern=states.UserSelectGroup.parse_pattern)],
+            states.UserSelectSubgroups: [CallbackQueryHandler(commands.select_subgroups,
+                                                              pattern=states.UserSelectSubgroups.parse_pattern)]
         },
         fallbacks=[
             CallbackQueryHandler(commands.home, pattern=r"^{}$".format(states.END))
@@ -46,17 +48,17 @@ def run():
     dp.add_handler(start_handler)
 
     # /home
-    home_handler = ConversationHandler(
-        entry_points=[
-            CommandHandler("home", commands.home),
-            # somehow add a global END handler?
-        ],
-        states={
-
-        },
-        fallbacks=[],
-    )
-    dp.add_handler(home_handler)
+    # home_handler = ConversationHandler(
+    #     entry_points=[
+    #         CommandHandler("home", commands.home),
+    #         # somehow add a global END handler?
+    #     ],
+    #     states={
+    #
+    #     },
+    #     fallbacks=[],
+    # )
+    # dp.add_handler(home_handler)
 
     # /help
     dp.add_handler(CommandHandler("help", commands.help))
