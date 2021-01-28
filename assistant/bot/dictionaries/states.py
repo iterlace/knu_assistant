@@ -56,5 +56,10 @@ TimetableWeekSelection = State("timetable_week_selection",
                                re.compile(r"^(\d{4}-\d{2}-\d{2})$"))
 
 
+TimetableDaySelection = State("timetable_day_selection",
+                              "{}",
+                              re.compile(r"^(\d{4}-\d{2}-\d{2})$"))
+
+
 END = ConversationHandler.END
 

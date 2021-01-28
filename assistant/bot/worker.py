@@ -60,6 +60,16 @@ def run():
         fallbacks=[]
     ))
 
+    # /day
+    dp.add_handler(ConversationHandler(
+        entry_points=[CommandHandler("day", commands.show_day_timetable)],
+        states={
+            states.TimetableDaySelection: [CallbackQueryHandler(commands.show_day_timetable,
+                                                                pattern=states.TimetableDaySelection.parse_pattern)],
+        },
+        fallbacks=[]
+    ))
+
     updater.start_polling()
 
     try:

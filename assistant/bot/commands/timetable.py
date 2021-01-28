@@ -27,7 +27,7 @@ from assistant.bot.dictionaries.phrases import *
 from assistant.utils import get_monday
 
 logger = logging.getLogger(__name__)
-__all__ = ["show_week_timetable"]
+__all__ = ["show_week_timetable", "show_day_timetable"]
 
 
 def build_timetable_lesson(session: Session, user: User, lesson: SingleLesson):
@@ -72,7 +72,7 @@ def build_timetable_day(session: Session, user: User, date: dt.date):
     return result_str
 
 
-def build_timetable_week(user: User, session: Session, monday: dt.date):
+def build_timetable_week(session: Session, user: User, monday: dt.date):
     result_str = ""
     for day_idx in range(7):
         date = monday + dt.timedelta(days=day_idx)
@@ -112,7 +112,7 @@ def show_week_timetable(update: Update, ctx: CallbackContext, session: Session, 
     ]
     keyboard = build_keyboard_menu(kb_buttons, 3)
 
-    timetable_str = build_timetable_week(user, session, requested_monday)
+    timetable_str = build_timetable_week(session, user, requested_monday)
 
     if not update.callback_query:
         bot.send_message(
@@ -131,6 +131,62 @@ def show_week_timetable(update: Update, ctx: CallbackContext, session: Session, 
             )
         except tg.TelegramError as e:
             # FIXME
-            if "Message is not modified" in str(e):
+            if "Message is not modified" not in str(e):
                 raise e
     return states.TimetableWeekSelection
+
+
+@db_session
+@acquire_user
+def show_day_timetable(update: Update, ctx: CallbackContext, session: Session, user: User):
+    if not update.callback_query:
+        requested_date = dt.date.today()
+    else:
+        requested_date = dt.datetime.strptime(update.callback_query.data, "%Y-%m-%d").date()
+
+    yesterday = requested_date - dt.timedelta(days=1)
+    tomorrow = requested_date + dt.timedelta(days=1)
+
+    kb_buttons = [
+        InlineKeyboardButton(
+            text="< {}".format(yesterday.strftime("%d.%m.%Y")),
+            callback_data=yesterday.isoformat(),
+        ),
+        InlineKeyboardButton(
+            text="Сьогодні".format(dt.date.today().strftime("%d.%m.%Y")),
+            callback_data=dt.date.today().isoformat(),
+        ),
+        InlineKeyboardButton(
+            text="{} >".format(tomorrow.strftime("%d.%m.%Y")),
+            callback_data=tomorrow.isoformat(),
+        ),
+    ]
+    keyboard = build_keyboard_menu(kb_buttons, 3)
+
+    header = "<b>{day_name}</b> ({date})".format(day_name=days_of_week.DAYS_OF_WEEK[requested_date.weekday()].name,
+                                                 date=requested_date.strftime("%d.%m"))
+    timetable_str = build_timetable_day(session, user, requested_date)
+    timetable_str = "{header}\n\n{body}".format(header=header, body=timetable_str)
+
+    if not update.callback_query:
+        bot.send_message(
+            update.effective_user.id,
+            text=timetable_str,
+            parse_mode=ParseMode.HTML,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
+    else:
+        update.callback_query.answer()
+        try:
+            update.callback_query.edit_message_text(
+                timetable_str,
+                parse_mode=ParseMode.HTML,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+            )
+        except tg.TelegramError as e:
+            # FIXME
+            if "Message is not modified" not in str(e):
+                raise e
+    return states.TimetableDaySelection
+
+
