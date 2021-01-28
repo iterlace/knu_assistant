@@ -8,5 +8,6 @@ e_hello = u"\U0001F44B"
 e_question = u"\U00002753"
 e_books = u"\U0001F4DA"
 e_person = u"\U0001F9D4"
+e_teacher = u"\U0001F9D1\U0000200D\U0001F3EB"
 
 p_cancel = "{} Скасувати".format(e_cancel)

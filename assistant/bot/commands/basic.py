@@ -36,6 +36,13 @@ __all__ = ["start", "home", "help"]
 HELLO_MESSAGE = """
 Привіт!
 
+[Власні налаштування]
+/change_group - перейти в іншу групу/підгрупу
+
+[Розклад]
+/week - на тиждень
+/day - на день
+
 Якщо бажаєш підтримати проєкт: https://github.com/VolkoffMary/K14_helper_bot.git
 Чат: @iterlace
 """
