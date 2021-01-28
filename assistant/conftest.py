@@ -39,7 +39,7 @@ def pytest_unconfigure(config):
 def reload_db_session_decorator():
     import assistant
     importlib.reload(assistant.bot.commands.basic)
-    # importlib.reload(assistant.bot.commands.timetable)
+    importlib.reload(assistant.bot.commands.timetable)
     importlib.reload(assistant.bot.commands.user)
     importlib.reload(assistant.bot.commands)
 

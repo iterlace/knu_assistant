@@ -18,25 +18,26 @@ from telegram.ext import (
 from sqlalchemy.orm import Session
 
 from assistant.config import bot
-from assistant.database import User, StudentsGroup, Lesson, SingleLesson, Teacher
+from assistant.database import User, StudentsGroup, Lesson, SingleLesson, Teacher, LessonSubgroupMember
 from assistant.bot.decorators import acquire_user, db_session
 from assistant.bot.dictionaries import states, days_of_week
 from assistant.bot.dictionaries import timetable
 from assistant.bot.keyboards import build_keyboard_menu
 from assistant.bot.dictionaries.phrases import *
+from assistant.utils import get_monday
 
 logger = logging.getLogger(__name__)
-__all__ = ["show_timetable"]
+__all__ = ["show_week_timetable"]
 
 
 def build_timetable_lesson(session: Session, user: User, lesson: SingleLesson):
     teachers_names = [t.short_name for t in lesson.lesson.teachers]
     teachers_formatted = "{emoji} {teachers}".format(emoji=e_person,
                                                      teachers=f"{e_person} ".join(teachers_names))
-    result_str = "{} {} - {}\n{} <b>{}</b>  {}".format(
-        e_clock, lesson.starts_at.strftime("%H:%M"), lesson.ends_at.strftime("%H:%M"),
-        e_books, lesson.lesson.name,
-        teachers_formatted
+    result_str = "{starts_at} - {ends_at}\n{e_books} <b>{name}</b> ({format})\n{teachers}".format(
+        e_clock=e_clock, starts_at=lesson.starts_at.strftime("%H:%M"), ends_at=lesson.ends_at.strftime("%H:%M"),
+        e_books=e_books, name=lesson.lesson.name, format=lesson.lesson.represent_lesson_format(),
+        teachers=teachers_formatted
     )
     return result_str
 
@@ -46,7 +47,13 @@ def build_timetable_day(session: Session, user: User, date: dt.date):
         session
         .query(SingleLesson)
         .join(
-            SingleLesson.lesson
+            LessonSubgroupMember,
+            LessonSubgroupMember.c.user_id == user.tg_id
+        )
+        .join(
+            Lesson,
+            (Lesson.id == SingleLesson.lesson_id) &
+            ((Lesson.subgroup == None) | (Lesson.id == LessonSubgroupMember.c.lesson_id))
         )
         .filter(
             (Lesson.students_group_id == user.students_group_id) &
@@ -62,27 +69,63 @@ def build_timetable_day(session: Session, user: User, date: dt.date):
     return result_str
 
 
-def build_timetable_week(group: StudentsGroup, session: Session):
-    lessons_str = ""
-    for day in days_of_week.DAYS_OF_WEEK:
-        lessons_str += "[ <b>{}</b> ]\n\n{}\n".format(day.name, build_timetable_day(session, group, day))
-    return lessons_str
-
-
-# # Buttons
-# cancel_add_lesson_button = InlineKeyboardButton(
-#     text="{} Скасувати".format(e_cancel),
-#     callback_data=states.CancelAddLessonToTimetable.build_pattern,
-# )
+def build_timetable_week(user: User, session: Session, monday: dt.date):
+    result_str = ""
+    for day_idx in range(7):
+        date = monday + dt.timedelta(days=day_idx)
+        result_str += "[ <b>{day}</b> ]\n{lesson_details}\n\n".format(
+            day=days_of_week.DAYS_OF_WEEK[date.weekday()].name,
+            lesson_details=build_timetable_day(session, user, date)
+        )
+    result_str = result_str[:-2]  # remove two last \n
+    return result_str
 
 
 @db_session
 @acquire_user
-def show_timetable(update: Update, ctx: CallbackContext, session: Session, user: User):
+def show_week_timetable(update: Update, ctx: CallbackContext, session: Session, user: User):
     if not update.callback_query:
-        bot.send_message(update.effective_user.id,
-                         text=build_timetable_week(user.students_group, session),
-                         parse_mode=ParseMode.HTML)
+        requested_date = dt.date.today()
+    else:
+        requested_date = dt.datetime.strptime(update.callback_query.data, "%Y-%m-%d").date()
+
+    requested_monday = get_monday(requested_date)
+    previous_monday = requested_monday - dt.timedelta(days=7)
+    next_monday = requested_monday + dt.timedelta(days=7)
+
+    kb_buttons = [
+        InlineKeyboardButton(
+            text="< {}".format(previous_monday.strftime("%d.%m.%Y")),
+            callback_data=previous_monday.isoformat(),
+        ),
+        InlineKeyboardButton(
+            text="Сьогодні".format(dt.date.today().strftime("%d.%m.%Y")),
+            callback_data=dt.date.today().isoformat(),
+        ),
+        InlineKeyboardButton(
+            text="{} >".format(next_monday.strftime("%d.%m.%Y")),
+            callback_data=next_monday.isoformat(),
+        ),
+    ]
+    keyboard = build_keyboard_menu(kb_buttons, 3)
+
+    timetable_str = build_timetable_week(user, session, requested_monday)
+
+    if not update.callback_query:
+        bot.send_message(
+            update.effective_user.id,
+            text=timetable_str,
+            parse_mode=ParseMode.HTML,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
+    else:
+        update.callback_query.answer()
+        update.callback_query.edit_message_text(
+            timetable_str,
+            parse_mode=ParseMode.HTML,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
+    return states.TimetableWeekSelection
 
 # @db_session
 # @acquire_user

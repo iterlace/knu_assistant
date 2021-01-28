@@ -10,6 +10,7 @@ from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
+from sqlalchemy.sql import text
 
 import assistant.config as config
 
@@ -66,6 +67,17 @@ class User(Base):
                              secondary="lessons_subgroups_members",
                              backref=backref("students", lazy="dynamic"),
                              )
+
+    def get_lessons(self, session: sqa.orm.Session):
+        return session.query(Lesson).from_statement(text("""
+SELECT DISTINCT ON (lessons.id) lessons.*
+FROM users u
+         INNER JOIN lessons_subgroups_members subgroups ON u.tg_id = subgroups.user_id
+         INNER JOIN lessons ON (u.students_group_id = lessons.students_group_id) AND
+                               ((lessons.subgroup IS NULL) OR
+                                (subgroups.lesson_id = lessons.id))
+WHERE tg_id = :tg_id;
+""")).params(tg_id=self.tg_id).all()
 
     def __repr__(self):
         return "<User(tg_id={}, tg_username={})".format(self.tg_id, self.tg_username)
@@ -211,6 +223,17 @@ class Lesson(Base):
         UniqueConstraint("name", "subgroup", "students_group_id", "lesson_format", name="lesson_complex_key"),
     )
 
+    def represent_lesson_format(self):
+        # TODO: move to enum with representation ability
+        names = {
+            0: "лекція",
+            1: "семінар",
+            2: "практика",
+            3: "лабораторна",
+            4: "інш.",
+        }
+        return names[self.lesson_format]
+
     def __repr__(self):
         return "<Lesson(id={}, name={})>".format(self.id, self.name)
 
@@ -241,9 +264,11 @@ class Teacher(Base):
 
     @property
     def full_name(self):
-        return " ".join((self.last_name, self.first_name, self.middle_name))
+        return " ".join((self.last_name, self.first_name, self.middle_name)).strip()
 
     @property
     def short_name(self):
-        return "{} {}. {}.".format(self.last_name, self.first_name[0], self.middle_name[0])
-
+        if self.first_name and self.middle_name:
+            return "{} {}. {}.".format(self.last_name, self.first_name[0], self.middle_name[0])
+        else:
+            return self.last_name

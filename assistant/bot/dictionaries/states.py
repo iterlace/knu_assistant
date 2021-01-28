@@ -51,5 +51,10 @@ UserSelectSubgroups = State("select_subgroups",
                             re.compile(r"^(\w+)$"))
 
 
+TimetableWeekSelection = State("timetable_week_selection",
+                               "{}",
+                               re.compile(r"^(\d{4}-\d{2}-\d{2})$"))
+
+
 END = ConversationHandler.END
 
