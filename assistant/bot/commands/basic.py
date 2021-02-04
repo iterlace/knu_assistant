@@ -43,8 +43,8 @@ HELLO_MESSAGE = """
 /week - на тиждень
 /day - на день
 
-Якщо бажаєш підтримати проєкт: https://github.com/VolkoffMary/K14_helper_bot.git
-Чат: @iterlace
+Якщо бажаєш підтримати проєкт: https://github.com/iterlace/knu_assistant
+Фідбек: @iterlace
 """
 
 
@@ -57,7 +57,7 @@ def start(update: Update, ctx: CallbackContext, session: Session, user: User):
         change_group(update=update, ctx=ctx, session=session, user=user)
         return states.UserSelectCourse
     else:
-        responses = ["Що як?", "Я тебе досі не відрахували?", "/start",
+        responses = ["Що як?", "Як тебе досі не відрахували?", "/start",
                      "Не можна повернутися в минуле і змінити свій старт, "
                      "але можна стартувати зараз і змінити свій фініш. © Мыслитель.инфо"]
         bot.send_message(update.effective_user.id, random.choice(responses))

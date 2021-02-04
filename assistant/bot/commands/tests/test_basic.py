@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import mock
 from pytest import mark
 from telethon import TelegramClient
 from telethon.tl.custom.message import Message
@@ -8,13 +9,37 @@ from assistant import config
 from assistant.database import User
 from assistant.bot.commands.tests.utils import flatten_keyboard
 from assistant.database import StudentsGroup, Faculty
+from assistant.bot.commands.user import change_group
+
+from assistant.tests.factories import (
+    FacultyFactory,
+    LessonFactory,
+    TeacherFactory,
+    SingleLessonFactory,
+    UserFactory,
+    StudentsGroupFactory,
+)
 
 
 class TestStart:
 
+    # @mark.skip
     @mark.asyncio
-    async def test_full_conversation(self, client: TelegramClient, db_session, use_bot,
-                                     fill_groups, fill_faculties):
+    async def test_full_conversation(self, client: TelegramClient, db_session, use_bot):
+
+        # faculty that would be selected
+        csc = FacultyFactory(name="CSC", shortcut="CSC")
+
+        # group that would be selected
+        group = StudentsGroupFactory(course=1, faculty=csc)
+
+        # Programming lesson, divided into 2 subgroups
+        koval = TeacherFactory()
+        kondratyuk = TeacherFactory()
+        programming_1 = LessonFactory(teachers=[koval], subgroup="1",
+                                      name="P", lesson_format=1, students_group=group)
+        programming_2 = LessonFactory(teachers=[kondratyuk], subgroup="2",
+                                      name="P", lesson_format=1, students_group=group)
 
         async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
             await conv.send_message("/start")
@@ -29,38 +54,38 @@ class TestStart:
 
             # course choice
             r = await conv.get_response()
-            kb = flatten_keyboard(await r.get_buttons())
+            # TODO: assert change_group was called
+            kb = flatten_keyboard(r.buttons)
             assert "курс" in r.raw_text.lower()
-            assert len(kb) == 1  # only one course is present in the database
-            # select 1st course
-            await kb[0].click()
+            assert len(kb) == 1  # only 1st course is present
+            await r.click(data=b"1")
 
             # faculty choice
             r = await conv.get_edit()
-            kb = flatten_keyboard(await r.get_buttons())
+            kb = flatten_keyboard(r.buttons)
             assert "факультет" in r.raw_text.lower()
-            assert len(kb) == len(fill_faculties)
+            assert len(kb) == 1  # only CSC is present
             # select "CSC"
-            selected_faculty_id = kb[0].data.decode("utf-8")
-            await r.click(data=selected_faculty_id.encode("utf-8"))
+            await r.click(data=str(csc.id).encode("utf-8"))
 
             # group choice
             r = await conv.get_edit()
-            kb = flatten_keyboard(await r.get_buttons())
-            available_groups = db_session.query(StudentsGroup).filter_by(faculty_id=selected_faculty_id)
-            selected_group = available_groups.first()
+            kb = flatten_keyboard(r.buttons)
             assert "груп" in r.raw_text.lower()
-            assert len(kb) == available_groups.count()
-            # select "K-11"
-            await r.click(data=str(selected_group.id).encode("utf-8"))
+            assert len(kb) == 1  # ensure extra_groups are excluded from this list
+            # select group
+            await r.click(data=str(group.id).encode("utf-8"))
 
-            # TODO: subgroup tests
-            # real_group_id = (
-            #     db_session
-            #     .query(User.students_group_id)
-            #     .filter(User.tg_id==(await client.get_me()).id)
-            #     .first()[0]
-            # )
-            # assert real_group_id == selected_group.id
+            r = await conv.get_edit()
+            assert r.text == "Групу встановлено!"
 
+            # programming subgroup choice
+            r = await conv.get_response()
+            kb = flatten_keyboard(r.buttons)
+            assert "підгрупу з {name} ({format})".format(name=programming_1.name, format=programming_1.lesson_format) \
+                   in r.raw_text
+            await kb[0].click()
+
+            r = await conv.get_edit()
+            assert r.text == "Підгрупи визначено!"
 

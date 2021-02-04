@@ -29,10 +29,10 @@ setup(
     ],
     tests_require=[
         "pytest",
-        # "pytest-mock~=3.5.1",
         "mock==4.0.3",
         "pytest-asyncio==0.14.0",
         "telethon==1.17.5",
+        "factory_boy==3.2.0"
     ],
     entry_points={
         "console_scripts": [

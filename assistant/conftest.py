@@ -7,8 +7,11 @@ from functools import wraps
 import mock
 import importlib
 import logging
+from time import sleep
+import datetime as dt
 from typing import List, Tuple, Optional, Any
 
+from sqlalchemy import orm
 from sqlalchemy import create_engine
 from sqlalchemy import event
 from sqlalchemy.orm import sessionmaker
@@ -19,6 +22,7 @@ from telethon import TelegramClient
 from telethon.sessions import StringSession
 
 from assistant import config
+from assistant.database import Session
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +30,8 @@ logger = logging.getLogger(__name__)
 API_ID = int(os.environ["TELEGRAM_APP_ID"])
 API_HASH = os.environ["TELEGRAM_APP_HASH"]
 TG_SESSION = os.environ["TELETHON_SESSION"]
+
+session = Session()
 
 
 def pytest_configure(config):
@@ -62,16 +68,35 @@ def use_bot(db_session):
     reload_db_session_decorator()
 
     # Start the bot in a separate thread
-    from assistant.bot.worker import run
-    thread = threading.Thread(target=run)
-    thread.daemon = True
+
+    stop_event = threading.Event()
+
+    def bot_thread():
+        from assistant.bot.worker import run
+        updater = run()
+        # stop the bot on signal
+        stop_event.wait()
+
+        # A trick to speed up updater.stop (9s vs 1ms)
+        # Job queue and httpd, which can break further tests, are stopped in blocking mode,
+        # but other parts would be terminated in a separate daemon.
+        updater.job_queue.stop()
+        updater._stop_httpd()
+        stop_thread = threading.Thread(target=updater.stop, daemon=True)
+        stop_thread.start()
+
+    thread = threading.Thread(target=bot_thread)
     thread.start()
 
     yield
 
+    stop_event.set()
     db_session_mock.stop()
     importlib.invalidate_caches()
     reload_db_session_decorator()
+
+    while thread.is_alive():
+        sleep(0.01)
 
 
 @pytest.fixture()
@@ -97,24 +122,15 @@ async def client() -> TelegramClient:
 
 @pytest.fixture(scope="session")
 def db():
-    engine = create_engine(config.DB_STRING, echo=True)
-    session_factory = sessionmaker(bind=engine)
-
-    _db = {
-        "engine": engine,
-        "session_factory": session_factory,
-    }
     alembic_config = AlembicConfig("migrations/alembic.ini")
     # Run alembic migrations
     alembic_upgrade(alembic_config, "head")
 
-    yield _db
-    engine.dispose()
+    yield
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", autouse=True)
 def db_session(db) -> SqaSession:
-    session = db["session_factory"]()
     session.begin_nested()  # Savepoint
 
     @event.listens_for(session, "after_transaction_end")
@@ -124,102 +140,7 @@ def db_session(db) -> SqaSession:
             session.begin_nested()
 
     yield session
+    
     session.rollback()
     session.close()
-
-
-@pytest.fixture(scope="function")
-def fill_teachers(db_session):
-    from assistant.database import Teacher
-
-    peterson = Teacher(first_name="Bob", middle_name="Fitzgerald", last_name="Peterson")
-    smith = Teacher(first_name="Mary", middle_name="Elizabeth", last_name="Smith")
-
-    db_session.add(peterson)
-    db_session.add(smith)
-    db_session.commit()
-
-    yield [peterson, smith]
-
-
-@pytest.fixture(scope="function")
-def fill_faculties(db_session):
-    from assistant.database import Faculty
-
-    csc = Faculty(name="Computer Science and Cybernetics", shortcut="CSC")
-
-    db_session.add(csc)
-    db_session.commit()
-
-    yield [csc]
-
-
-@pytest.fixture(scope="function")
-def fill_groups(db_session, fill_faculties):
-    from assistant.database import StudentsGroup
-
-    K11 = StudentsGroup(name="K-11", course=1, faculty=fill_faculties[0])
-    K12 = StudentsGroup(name="K-12", course=1, faculty=fill_faculties[0])
-
-    db_session.add(K11)
-    db_session.add(K12)
-    db_session.commit()
-
-    yield [K11, K12]
-
-
-@pytest.fixture(scope="function")
-def fill_users(db_session, fill_groups):
-    from assistant.database import User
-
-    mike = User(tg_id=800000000, tg_username="mike", students_group=fill_groups[0])
-    george = User(tg_id=800000001, tg_username="george", students_group=fill_groups[0])
-    jane = User(tg_id=800000002, tg_username="jane", students_group=fill_groups[1])
-
-    db_session.add(mike)
-    db_session.add(george)
-    db_session.add(jane)
-    db_session.commit()
-
-    yield [mike, george, jane]
-
-
-@pytest.fixture(scope="function")
-def fill_lessons(db_session, fill_teachers, fill_groups):
-    from assistant.database import Lesson, Teacher
-
-    algebra_lecture = Lesson(
-        name="Algebra",
-        students_group=fill_groups[0],
-        subgroup=None,
-        lesson_format=0,
-        teachers=[fill_teachers[0]],
-    )
-    algebra_practice_1 = Lesson(
-        name="Algebra",
-        students_group=fill_groups[0],
-        subgroup="1",
-        lesson_format=2,
-        teachers=[fill_teachers[0]],
-    )
-    algebra_practice_2 = Lesson(
-        name="Algebra",
-        students_group=fill_groups[0],
-        subgroup="2",
-        lesson_format=2,
-        teachers=[fill_teachers[1]],
-    )
-
-    db_session.add(algebra_lecture)
-    db_session.add(algebra_practice_1)
-    db_session.add(algebra_practice_2)
-    db_session.commit()
-
-    yield [algebra_lecture, algebra_practice_1, algebra_practice_2]
-
-
-# @pytest.fixture(scope="function")
-# def fill_single_lessons(db_session, fill_lessons):
-#     from assistant.database import SingleLesson, Lesson
-#     # TODO
-
+    event.remove(session, "after_transaction_end", restart_savepoint)

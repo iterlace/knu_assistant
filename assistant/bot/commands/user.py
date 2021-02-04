@@ -157,6 +157,7 @@ def select_subgroups(update: Update, ctx: CallbackContext, session: Session, use
             Lesson.students_group_id==ctx.user_data["group_id"],
             *filters,
         )
+        .order_by(Lesson.name)
         .group_by(Lesson.name, Lesson.students_group_id, Lesson.lesson_format)
         .having(func.count(1) > 1)
         .all()

@@ -50,17 +50,6 @@ class User(Base):
         nullable=False,
         default=False,
     )
-    current_state = Column(
-        String,
-        nullable=True,
-        default=None,
-    )
-    state_data = Column(
-        JSONB,
-        nullable=False,
-        default=dict,
-        server_default="{}",
-    )
 
     students_group = relationship("StudentsGroup", back_populates="students")
     subgroups = relationship("Lesson",

@@ -80,7 +80,7 @@ def run():
             print(e)
         else:
             raise e
-    return
+    return updater
 
 
 if __name__ == '__main__':
