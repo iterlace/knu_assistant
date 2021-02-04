@@ -122,6 +122,44 @@ class TestChangeGroup:
             assert subgroups[1] == (programming_1.id, user.tg_id)
 
     @mark.asyncio
+    async def test_empty_subgroups(self, client: TelegramClient, db_session, use_bot):
+
+        # faculty that would be selected
+        csc = FacultyFactory(name="CSC", shortcut="CSC")
+
+        # group that would be selected
+        group = StudentsGroupFactory(course=1, faculty=csc)
+
+        # Current user
+        user = UserFactory(tg_id=(await client.get_me()).id, students_group=group)
+
+        async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
+            await conv.send_message("/change_group")
+
+            # course choice
+            r = await conv.get_response()
+            kb = flatten_keyboard(r.buttons)
+            await r.click(data=b"1")
+
+            # faculty choice
+            r = await conv.get_edit()
+            kb = flatten_keyboard(r.buttons)
+            # select "CSC"
+            await r.click(data=str(csc.id).encode("utf-8"))
+
+            # group choice
+            r = await conv.get_edit()
+            kb = flatten_keyboard(r.buttons)
+            # select group
+            await r.click(data=str(group.id).encode("utf-8"))
+
+            r = await conv.get_edit()
+            assert r.text == "Групу встановлено!"
+
+            db_session.refresh(user)
+            assert user.students_group == group
+
+    @mark.asyncio
     async def test_end_button(self, client: TelegramClient, db_session, use_bot):
         """ Test END callback button works properly """
         group = StudentsGroupFactory(course=1)

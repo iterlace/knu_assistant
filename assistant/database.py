@@ -57,17 +57,6 @@ class User(Base):
                              backref=backref("students", lazy="dynamic"),
                              )
 
-    def get_lessons(self, session: sqa.orm.Session):
-        return session.query(Lesson).from_statement(text("""
-SELECT DISTINCT ON (lessons.id) lessons.*
-FROM users u
-         INNER JOIN lessons_subgroups_members subgroups ON u.tg_id = subgroups.user_id
-         INNER JOIN lessons ON (u.students_group_id = lessons.students_group_id) AND
-                               ((lessons.subgroup IS NULL) OR
-                                (subgroups.lesson_id = lessons.id))
-WHERE tg_id = :tg_id;
-""")).params(tg_id=self.tg_id).all()
-
     def __repr__(self):
         return "<User(tg_id={}, tg_username={})".format(self.tg_id, self.tg_username)
 

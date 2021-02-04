@@ -1,7 +1,8 @@
 from datetime import datetime
+import asyncio
 
 import mock
-from pytest import mark
+from pytest import mark, raises
 from telethon import TelegramClient
 from telethon.tl.custom.message import Message
 
@@ -23,9 +24,9 @@ from assistant.tests.factories import (
 
 class TestStart:
 
-    # @mark.skip
     @mark.asyncio
     async def test_full_conversation(self, client: TelegramClient, db_session, use_bot):
+        """ Test /start """
 
         # faculty that would be selected
         csc = FacultyFactory(name="CSC", shortcut="CSC")
@@ -89,3 +90,22 @@ class TestStart:
             r = await conv.get_edit()
             assert r.text == "Підгрупи визначено!"
 
+    @mark.asyncio
+    async def test_active_user(self, client: TelegramClient, db_session, use_bot):
+        """ Test /start by already registered user """
+
+        # group that would be selected
+        group = StudentsGroupFactory(course=1)
+
+        # Current user
+        user = UserFactory(tg_id=(await client.get_me()).id, students_group=group)
+
+        async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
+            await conv.send_message("/start")
+            r = await conv.get_response()
+            # Ensure it is not common response
+            assert "Привіт!" not in r.raw_text
+
+            # ensure only one message is sent
+            with raises(asyncio.TimeoutError):
+                await conv.get_response(timeout=1)
