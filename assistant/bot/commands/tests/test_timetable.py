@@ -125,24 +125,7 @@ class TestTimetableBuilders:
 [ <b>Понеділок</b> ]
 08:40 - 10:15
 {e_books} <b>M</b> ({math.represent_lesson_format()})
-{e_teacher} {math.teachers[0].short_name}
-
-[ <b>Вівторок</b> ]
-
-
-[ <b>Середа</b> ]
-
-
-[ <b>Четвер</b> ]
-
-
-[ <b>П'ятниця</b> ]
-
-
-[ <b>Субота</b> ]
-
-
-[ <b>Неділя</b> ]
+{e_teacher} {math.teachers[0].short_name}\
 """
 
 
@@ -174,8 +157,8 @@ class TestTimetableCommands:
             math_yesterday_sl = SingleLessonFactory(
                 lesson=math,
                 date=yesterday,
-                starts_at=dt.time(8, 40),
-                ends_at=dt.time(10, 15),
+                starts_at=dt.time(12, 20),
+                ends_at=dt.time(13, 55),
             )
             db_session.commit()
 
@@ -204,7 +187,65 @@ class TestTimetableCommands:
 
                 r = await conv.get_edit()
                 kb = flatten_keyboard(r.buttons)
-                expected_timetable = build_timetable_day(db_session, user, yesterday)
+                expected_timetable = build_timetable_day(db_session, user, today)
                 assert r.text == "<b>Понеділок</b> (01.02)\n\n{}".format(expected_timetable)
 
+    @mark.asyncio
+    async def test_week(self, db_session, client: TelegramClient, use_bot):
+        group = StudentsGroupFactory()
+        user = UserFactory(tg_id=(await client.get_me()).id, students_group=group)
+
+        current_monday = dt.date(2021, 2, 1)
+        prev_monday = current_monday - dt.timedelta(days=7)
+        next_monday = current_monday + dt.timedelta(days=7)
+
+        with mock.patch("assistant.bot.commands.timetable.dt") as dt_mock:
+            dt_mock.date.today = mock.Mock(return_value=current_monday)
+            dt_mock.datetime = dt.datetime
+            dt_mock.timedelta = dt.timedelta
+
+            # Lessons
+            math = LessonFactory(name="M", lesson_format=0, students_group=group)
+            # SingleLessons
+            math_current_monday_sl = SingleLessonFactory(
+                lesson=math,
+                date=current_monday,
+                starts_at=dt.time(8, 40),
+                ends_at=dt.time(10, 15),
+            )
+            math_prev_monday_sl = SingleLessonFactory(
+                lesson=math,
+                date=prev_monday,
+                starts_at=dt.time(12, 20),
+                ends_at=dt.time(13, 55),
+            )
+            db_session.commit()
+
+            async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
+                await conv.send_message("/week")
+                r: Message
+
+                r = await conv.get_response()
+                kb = flatten_keyboard(r.buttons)
+                expected_timetable = build_timetable_week(db_session, user, current_monday)
+                assert r.text == expected_timetable
+                assert kb[0].text == "< {}".format(prev_monday.strftime("%d.%m.%Y"))
+                assert kb[1].text == "Сьогодні".format(current_monday.strftime("%d.%m.%Y"))
+                assert kb[2].text == "{} >".format(next_monday.strftime("%d.%m.%Y"))
+
+                # Select previous day
+                await kb[0].click()
+
+                r = await conv.get_edit()
+                kb = flatten_keyboard(r.buttons)
+                expected_timetable = build_timetable_week(db_session, user, prev_monday)
+                assert r.text == expected_timetable
+
+                # Select today
+                await kb[1].click()
+
+                r = await conv.get_edit()
+                kb = flatten_keyboard(r.buttons)
+                expected_timetable = build_timetable_week(db_session, user, current_monday)
+                assert r.text == expected_timetable
 

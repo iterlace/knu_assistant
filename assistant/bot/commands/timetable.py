@@ -29,6 +29,8 @@ from assistant.utils import get_monday
 logger = logging.getLogger(__name__)
 __all__ = ["show_week_timetable", "show_day_timetable"]
 
+ENDING_SPACES_MASK = re.compile(r"^(.*)(?<!\s)(\s+)$", flags=re.S)
+
 
 def build_timetable_lesson(session: Session, user: User, lesson: SingleLesson):
     teachers_names = [t.short_name for t in lesson.lesson.teachers]
@@ -67,7 +69,7 @@ def build_timetable_day(session: Session, user: User, date: dt.date):
     result_str = ""
     for lesson in lessons:
         result_str += "{}\n\n".format(build_timetable_lesson(session, user, lesson))
-    result_str = result_str[:-2]  # remove two last \n
+    result_str = ENDING_SPACES_MASK.sub(r"\1", result_str)  # remove \n in the ending
     return result_str
 
 
@@ -75,11 +77,13 @@ def build_timetable_week(session: Session, user: User, monday: dt.date):
     result_str = ""
     for day_idx in range(7):
         date = monday + dt.timedelta(days=day_idx)
-        result_str += "[ <b>{day}</b> ]\n{lesson_details}\n\n".format(
-            day=days_of_week.DAYS_OF_WEEK[date.weekday()].name,
-            lesson_details=build_timetable_day(session, user, date),
-        )
-    result_str = result_str[:-2]  # remove two last \n
+        lesson_details = build_timetable_day(session, user, date)
+        if lesson_details:
+            result_str += "[ <b>{day}</b> ]\n{lesson_details}\n\n".format(
+                day=days_of_week.DAYS_OF_WEEK[date.weekday()].name,
+                lesson_details=lesson_details,
+            )
+    result_str = ENDING_SPACES_MASK.sub(r"\1", result_str)  # remove \n in the ending
     return result_str
 
 
@@ -101,7 +105,7 @@ def show_week_timetable(update: Update, ctx: CallbackContext, session: Session, 
             callback_data=previous_monday.isoformat(),
         ),
         InlineKeyboardButton(
-            text="Сьогодні".format(dt.date.today().strftime("%d.%m.%Y")),
+            text="Сьогодні",
             callback_data=dt.date.today().isoformat(),
         ),
         InlineKeyboardButton(
@@ -152,7 +156,7 @@ def show_day_timetable(update: Update, ctx: CallbackContext, session: Session, u
             callback_data=yesterday.isoformat(),
         ),
         InlineKeyboardButton(
-            text="Сьогодні".format(dt.date.today().strftime("%d.%m.%Y")),
+            text="Сьогодні",
             callback_data=dt.date.today().isoformat(),
         ),
         InlineKeyboardButton(
