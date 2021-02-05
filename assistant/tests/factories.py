@@ -22,18 +22,6 @@ from assistant.database import (
 from assistant.conftest import session
 
 
-class UserFactory(SQLAlchemyModelFactory):
-    class Meta:
-        model = User
-        sqlalchemy_session = session
-
-    tg_id = fuzzy.FuzzyInteger(low=100000000)
-    tg_username = fuzzy.FuzzyText()
-    is_admin = factory.LazyFunction(lambda: False)
-    is_group_moderator = factory.LazyFunction(lambda: False)
-    # students_group
-
-
 class FacultyFactory(SQLAlchemyModelFactory):
     class Meta:
         model = Faculty
@@ -61,6 +49,18 @@ class StudentsGroupFactory(SQLAlchemyModelFactory):
     name = fuzzy.FuzzyText(length=4, chars=string.ascii_uppercase + string.digits)
     course = fuzzy.FuzzyInteger(low=1, high=4)
     faculty = factory.SubFactory(FacultyFactory)
+
+
+class UserFactory(SQLAlchemyModelFactory):
+    class Meta:
+        model = User
+        sqlalchemy_session = session
+
+    tg_id = fuzzy.FuzzyInteger(low=100000000)
+    tg_username = fuzzy.FuzzyText()
+    is_admin = factory.LazyFunction(lambda: False)
+    is_group_moderator = factory.LazyFunction(lambda: False)
+    students_group = factory.SubFactory(StudentsGroupFactory)
 
 
 class LessonFactory(SQLAlchemyModelFactory):
@@ -116,7 +116,7 @@ class SingleLessonFactory(SQLAlchemyModelFactory):
         if extracted is not None:
             self.ends_at = extracted
         else:
-            self.ends_at = self.starts_at + dt.timedelta(hours=1, minutes=30)
-
-
+            starts_dt = dt.datetime(1970, 1, 1, self.starts_at.hour, self.starts_at.minute)
+            ends_dt = starts_dt + dt.timedelta(hours=1, minutes=30)
+            self.ends_at = ends_dt.time()
 

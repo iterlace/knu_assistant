@@ -41,6 +41,7 @@ class TestStart:
                                       name="P", lesson_format=1, students_group=group)
         programming_2 = LessonFactory(teachers=[kondratyuk], subgroup="2",
                                       name="P", lesson_format=1, students_group=group)
+        db_session.commit()
 
         async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
             await conv.send_message("/start")

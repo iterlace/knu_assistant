@@ -162,7 +162,7 @@ class TestChangeGroup:
     @mark.asyncio
     async def test_end_button(self, client: TelegramClient, db_session, use_bot):
         """ Test END callback button works properly """
-        group = StudentsGroupFactory(course=1)
+        group = StudentsGroupFactory()
         user = UserFactory(tg_id=(await client.get_me()).id, students_group=group)
 
         async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
