@@ -35,7 +35,8 @@ def run():
         },
         fallbacks=[
             CallbackQueryHandler(commands.home, pattern=r"^{}$".format(states.END))
-        ]
+        ],
+        per_chat=True,
     )
     dp.add_handler(select_group_handler)
 
@@ -44,6 +45,7 @@ def run():
         entry_points=[CommandHandler("start", commands.start)],
         states=select_group_handler.states,
         fallbacks=[],
+        per_chat=True,
     )
     dp.add_handler(start_handler)
 
@@ -57,7 +59,8 @@ def run():
             states.TimetableWeekSelection: [CallbackQueryHandler(commands.show_week_timetable,
                                                                  pattern=states.TimetableWeekSelection.parse_pattern)],
         },
-        fallbacks=[]
+        fallbacks=[],
+        per_chat=True,
     ))
 
     # /day
@@ -67,7 +70,8 @@ def run():
             states.TimetableDaySelection: [CallbackQueryHandler(commands.show_day_timetable,
                                                                 pattern=states.TimetableDaySelection.parse_pattern)],
         },
-        fallbacks=[]
+        fallbacks=[],
+        per_chat=True,
     ))
 
     updater.start_polling()

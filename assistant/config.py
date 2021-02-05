@@ -60,6 +60,11 @@ dictConfig({
             "level": "DEBUG",
             "propagate": False,
         },
+        # "telegram": {
+        #     "handler": ["default"],
+        #     "level": "ERROR",
+        #     "propagate": False,
+        # },
     },
     "root": {
         "level": "WARNING",

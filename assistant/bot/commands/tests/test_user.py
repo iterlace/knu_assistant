@@ -57,6 +57,7 @@ class TestChangeGroup:
 
         async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
             await conv.send_message("/change_group")
+            r: Message
 
             # course choice
             r = await conv.get_response()
@@ -135,6 +136,7 @@ class TestChangeGroup:
 
         async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
             await conv.send_message("/change_group")
+            r: Message
 
             # course choice
             r = await conv.get_response()
@@ -167,6 +169,8 @@ class TestChangeGroup:
 
         async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
             await conv.send_message("/change_group")
+            r: Message
+
             r = await conv.get_response()
             kb = flatten_keyboard(r.buttons)
             await kb[-1].click()

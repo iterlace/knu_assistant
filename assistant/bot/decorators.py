@@ -37,7 +37,9 @@ def acquire_user(func):
         if "user" in kwargs:
             return func(*args, **kwargs)
 
-        update: Update = kwargs.get("update", args[0])
+        update: Update = kwargs.get("update", None)
+        if update is None:
+            update = args[0]
         session: Session = kwargs.get("session")
 
         user = session.query(User).get(update.effective_user.id)
@@ -59,3 +61,27 @@ def acquire_user(func):
         return func(*args, **kwargs)
 
     return inner
+
+
+def moderators_only(func):
+
+    @wraps(func)
+    def inner(*args, user, **kwargs):
+        if user.is_group_moderator:
+            return func(*args, user=user, **kwargs)
+        else:
+            return None
+    return inner
+
+
+def admins_only(func):
+
+    @wraps(func)
+    def inner(*args, user, **kwargs):
+        if user.is_admin:
+            return func(*args, user=user, **kwargs)
+        else:
+            return None
+    return inner
+
+

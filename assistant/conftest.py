@@ -9,7 +9,8 @@ import importlib
 import logging
 from time import sleep
 import datetime as dt
-from typing import List, Tuple, Optional, Any
+from typing import List, Tuple, Optional, Any, Iterable
+from html import escape
 
 from sqlalchemy import orm
 from sqlalchemy import create_engine
@@ -20,6 +21,15 @@ from alembic.command import upgrade as alembic_upgrade
 from alembic.config import Config as AlembicConfig
 from telethon import TelegramClient
 from telethon.sessions import StringSession
+from telethon.extensions.html import _add_surrogate, _del_surrogate
+from telethon.extensions.html import helpers
+from telethon.tl.types import (
+    MessageEntityBold, MessageEntityItalic, MessageEntityCode,
+    MessageEntityPre, MessageEntityEmail, MessageEntityUrl,
+    MessageEntityTextUrl, MessageEntityMentionName,
+    MessageEntityUnderline, MessageEntityStrike, MessageEntityBlockquote,
+    TypeMessageEntity,
+)
 
 from assistant import config
 from assistant.database import Session
@@ -102,10 +112,88 @@ def use_bot(db_session):
 @pytest.fixture()
 @mark.asyncio
 async def client() -> TelegramClient:
+    def unparse(text, entities, _offset=0, _length=None) -> str:
+        """
+        Modification of telethon.extensions.html.unparse
+        Bold is now interpreted as <b></b>
+        Italic is now interpreted as <i></i>
+        """
+        if not text:
+            return text
+        elif not entities:
+            return escape(text)
+
+        text = _add_surrogate(text)
+        if _length is None:
+            _length = len(text)
+        html = []
+        last_offset = 0
+        for i, entity in enumerate(entities):
+            if entity.offset >= _offset + _length:
+                break
+            relative_offset = entity.offset - _offset
+            if relative_offset > last_offset:
+                html.append(escape(text[last_offset:relative_offset]))
+            elif relative_offset < last_offset:
+                continue
+
+            skip_entity = False
+            length = entity.length
+
+            while helpers.within_surrogate(text, relative_offset, length=_length):
+                relative_offset += 1
+
+            while helpers.within_surrogate(text, relative_offset + length, length=_length):
+                length += 1
+
+            entity_text = unparse(text=text[relative_offset:relative_offset + length],
+                                  entities=entities[i + 1:],
+                                  _offset=entity.offset, _length=length)
+            entity_type = type(entity)
+
+            if entity_type == MessageEntityBold:
+                html.append('<b>{}</b>'.format(entity_text))
+            elif entity_type == MessageEntityItalic:
+                html.append('<i>{}</i>'.format(entity_text))
+            elif entity_type == MessageEntityCode:
+                html.append('<code>{}</code>'.format(entity_text))
+            elif entity_type == MessageEntityUnderline:
+                html.append('<u>{}</u>'.format(entity_text))
+            elif entity_type == MessageEntityStrike:
+                html.append('<del>{}</del>'.format(entity_text))
+            elif entity_type == MessageEntityBlockquote:
+                html.append('<blockquote>{}</blockquote>'.format(entity_text))
+            elif entity_type == MessageEntityPre:
+                if entity.language:
+                    html.append("<pre>\n    <code class='language-{}'>\n        {}\n    </code>\n</pre>"
+                                .format(entity.language, entity_text))
+                else:
+                    html.append('<pre><code>{}</code></pre>'.format(entity_text))
+            elif entity_type == MessageEntityEmail:
+                html.append('<a href="mailto:{0}">{0}</a>'.format(entity_text))
+            elif entity_type == MessageEntityUrl:
+                html.append('<a href="{0}">{0}</a>'.format(entity_text))
+            elif entity_type == MessageEntityTextUrl:
+                html.append('<a href="{}">{}</a>'.format(escape(entity.url), entity_text))
+            elif entity_type == MessageEntityMentionName:
+                html.append('<a href="tg://user?id={}">{}</a>'.format(entity.user_id, entity_text))
+            else:
+                skip_entity = True
+            last_offset = relative_offset + (0 if skip_entity else length)
+
+        while helpers.within_surrogate(text, last_offset, length=_length):
+            last_offset += 1
+
+        html.append(escape(text[last_offset:]))
+        return _del_surrogate(''.join(html))
+
+    unparse_mock = mock.patch("telethon.extensions.html.unparse", unparse)
+    unparse_mock.start()
     client = TelegramClient(
         StringSession(TG_SESSION), API_ID, API_HASH,
         sequential_updates=True,
     )
+    client.parse_mode = "html"
 
     # Connect to the server
     await client.connect()
@@ -116,6 +204,7 @@ async def client() -> TelegramClient:
 
     yield client
 
+    unparse_mock.stop()
     await client.disconnect()
     await client.disconnected
 

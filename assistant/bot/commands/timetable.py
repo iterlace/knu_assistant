@@ -77,7 +77,7 @@ def build_timetable_week(session: Session, user: User, monday: dt.date):
         date = monday + dt.timedelta(days=day_idx)
         result_str += "[ <b>{day}</b> ]\n{lesson_details}\n\n".format(
             day=days_of_week.DAYS_OF_WEEK[date.weekday()].name,
-            lesson_details=build_timetable_day(session, user, date)
+            lesson_details=build_timetable_day(session, user, date),
         )
     result_str = result_str[:-2]  # remove two last \n
     return result_str
