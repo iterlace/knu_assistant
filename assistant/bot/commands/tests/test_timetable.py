@@ -44,34 +44,55 @@ class TestTimetable:
     def test_build_timetable_day(self, db_session):
         group = StudentsGroupFactory()
         user = UserFactory(students_group=group)
-        math = LessonFactory(students_group=group)
 
         date = dt.date(year=2021, month=1, day=26)
-        math_1 = SingleLessonFactory(
+
+        # Teachers
+        koval = TeacherFactory()
+        kondratyuk = TeacherFactory()
+
+        # Lessons
+        math = LessonFactory(name="M", lesson_format=0, students_group=group)
+        # Programming practices are divided into 2 subgroups
+        programming_1 = LessonFactory(teachers=[koval], subgroup="1",
+                                      name="P", lesson_format=1, students_group=group)
+        programming_2 = LessonFactory(teachers=[kondratyuk], subgroup="2",
+                                      name="P", lesson_format=1, students_group=group)
+
+        # User belongs to programming_1 subgroup
+        user.subgroups.append(programming_1)
+
+        # SingleLessons
+        math_sl = SingleLessonFactory(
             lesson=math,
             date=date,
-            starts_at=dt.time(hour=10, minute=0, second=0),
-            ends_at=dt.time(hour=11, minute=30, second=0),
+            starts_at=dt.time(8, 40),
+            ends_at=dt.time(10, 15),
         )
-        math_2 = SingleLessonFactory(
-            lesson=math,
+        programming_1_sl = SingleLessonFactory(
+            lesson=programming_1,
             date=date,
-            starts_at=dt.time(hour=12, minute=0, second=0),
-            ends_at=dt.time(hour=13, minute=30, second=0),
+            starts_at=dt.time(10, 35),
+            ends_at=dt.time(12, 10),
         )
-        extra_lesson = SingleLessonFactory(date=date)
+        programming_2_sl = SingleLessonFactory(
+            lesson=programming_2,
+            date=date,
+            starts_at=dt.time(10, 35),
+            ends_at=dt.time(12, 10),
+        )
+        extra_sl = SingleLessonFactory(date=date)
 
         db_session.commit()
 
         result = build_timetable_day(db_session, user, date)
-
         assert result == f"""\
-10:00 - 11:30
-{e_books} <b>{math.name}</b> ({math.represent_lesson_format()})
+08:40 - 10:15
+{e_books} <b>M</b> ({math.represent_lesson_format()})
 {e_teacher} {math.teachers[0].short_name}
 
-12:00 - 13:30
-{e_books} <b>{math.name}</b> ({math.represent_lesson_format()})
-{e_teacher} {math.teachers[0].short_name}\
+10:35 - 12:10
+{e_books} <b>P</b> ({programming_1.represent_lesson_format()})
+{e_teacher} {koval.short_name}\
 """
 
