@@ -47,11 +47,10 @@ def build_timetable_day(session: Session, user: User, date: dt.date):
         session
         .query(SingleLesson)
         # join user's subgroups
-        .join(
+        .outerjoin(
             LessonSubgroupMember,
             LessonSubgroupMember.c.user_id == user.tg_id
         )
-        #
         # join user's not subdivided lessons
         .join(
             Lesson,
