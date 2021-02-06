@@ -85,6 +85,7 @@ class StudentsGroup(Base):
     students = relationship("User", order_by=User.tg_id, back_populates="students_group")
     lessons = relationship("Lesson", back_populates="students_group")
     faculty = relationship("Faculty", back_populates="groups")
+    requests = relationship("Request", back_populates="students_group")
 
     def __repr__(self):
         return "<StudentsGroup(id={}, name={})>".format(self.id, self.name)
@@ -136,6 +137,10 @@ class SingleLesson(Base):
         Integer,
         ForeignKey("lessons.id"),
         nullable=False,
+    )
+    comment = Column(
+        String,
+        nullable=True,
     )
 
     lesson = relationship("Lesson")
@@ -189,6 +194,10 @@ class Lesson(Base):
         Integer,
         nullable=False,
     )
+    link = Column(
+        String,
+        nullable=True,
+    )
     teachers = relationship(
         "Teacher",
         secondary=LessonTeacher,
@@ -237,7 +246,7 @@ class Teacher(Base):
     )
 
     def __repr__(self):
-        return "<Lesson(id={}, first_name={}, last_name={}, middle_name={})>"\
+        return "<Teacher(id={}, first_name={}, last_name={}, middle_name={})>"\
             .format(self.id, self.first_name, self.last_name, self.middle_name)
 
     @property
@@ -250,3 +259,52 @@ class Teacher(Base):
             return "{} {}. {}.".format(self.last_name, self.first_name[0], self.middle_name[0])
         else:
             return self.last_name
+
+
+class Request(Base):
+    """
+    Requests from common users to students group moderator
+    to change something in a timetable, post some messages to the channel, etc
+    """
+    __tablename__ = "requests"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+    )
+
+    # student group this request relates to
+    students_group_id = Column(
+        Integer,
+        ForeignKey("students_groups.id"),
+        nullable=False,
+    )
+
+    # user who proposed this request
+    initiator_id = Column(
+        Integer,
+        ForeignKey("users.tg_id"),
+        nullable=False,
+    )
+
+    # moderator who received this request
+    moderator_id = Column(
+        Integer,
+        ForeignKey("users.tg_id"),
+        nullable=False,
+    )
+
+    # request body (e.g. {"action": "edit_lesson_link", "lesson_id": 1, "link": "https://dc.zoom.us/xxx"})
+    body = Column(
+        pg.JSONB,
+        nullable=False,
+    )
+
+    students_group = relationship("StudentsGroup", back_populates="requests")
+    initiator = relationship("User", foreign_keys=[initiator_id])
+    moderator = relationship("User", foreign_keys=[moderator_id])
+
+    def __repr__(self):
+        return "<Request(id={}, students_group_id={})>"\
+            .format(self.id, self.students_group_id)
+

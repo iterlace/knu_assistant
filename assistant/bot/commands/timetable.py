@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from assistant.config import bot
 from assistant.database import User, StudentsGroup, Lesson, SingleLesson, Teacher, LessonSubgroupMember
-from assistant.bot.decorators import acquire_user, db_session
+from assistant.bot.decorators import acquire_user, db_session, moderators_only, admins_only
 from assistant.bot.dictionaries import states, days_of_week
 from assistant.bot.dictionaries import timetable
 from assistant.bot.keyboards import build_keyboard_menu
@@ -36,11 +36,27 @@ def build_timetable_lesson(session: Session, user: User, lesson: SingleLesson):
     teachers_names = [t.short_name for t in lesson.lesson.teachers]
     teachers_formatted = "{emoji} {teachers}".format(emoji=e_teacher,
                                                      teachers=f"{e_teacher} ".join(teachers_names))
-    result_str = "{starts_at} - {ends_at}\n{e_books} <b>{name}</b> ({format})\n{teachers}".format(
+    result_str = """\
+{starts_at} - {ends_at}
+{e_books} <b>{name}</b> ({format})
+{teachers}\n\
+""".format(
         e_clock=e_clock, starts_at=lesson.starts_at.strftime("%H:%M"), ends_at=lesson.ends_at.strftime("%H:%M"),
         e_books=e_books, name=lesson.lesson.name, format=lesson.lesson.represent_lesson_format(),
         teachers=teachers_formatted
     )
+    if lesson.lesson.link:
+        result_str += "<a href=\"{}\">Посилання</a>. Змінити: /link@{}\n"\
+            .format(lesson.lesson.link, lesson.lesson_id)
+    else:
+        result_str += "Встановити посилання: /link@{}\n"\
+            .format(lesson.lesson_id)
+
+    if lesson.comment:
+        result_str += "<i>{} (/comment@{})</i>".format(lesson.comment, lesson.id)
+    else:
+        result_str += "Додати коментар: /comment@{}".format(lesson.id)
+    result_str = ENDING_SPACES_MASK.sub(r"\1", result_str)  # remove \n in the ending
     return result_str
 
 
@@ -93,7 +109,12 @@ def show_week_timetable(update: Update, ctx: CallbackContext, session: Session, 
     if not update.callback_query:
         requested_date = dt.date.today()
     else:
-        requested_date = dt.datetime.strptime(update.callback_query.data, "%Y-%m-%d").date()
+        requested_date = states.TimetableWeekSelection.parse_pattern.match(update.callback_query.data)
+        if requested_date is None:
+            return None
+        else:
+            requested_date = requested_date.group(1)
+        requested_date = dt.datetime.strptime(requested_date, "%Y-%m-%d").date()
 
     requested_monday = get_monday(requested_date)
     previous_monday = requested_monday - dt.timedelta(days=7)
@@ -102,15 +123,15 @@ def show_week_timetable(update: Update, ctx: CallbackContext, session: Session, 
     kb_buttons = [
         InlineKeyboardButton(
             text="< {}".format(previous_monday.strftime("%d.%m.%Y")),
-            callback_data=previous_monday.isoformat(),
+            callback_data=states.TimetableWeekSelection.build_pattern.format(previous_monday.isoformat()),
         ),
         InlineKeyboardButton(
             text="Сьогодні",
-            callback_data=dt.date.today().isoformat(),
+            callback_data=states.TimetableWeekSelection.build_pattern.format(dt.date.today().isoformat()),
         ),
         InlineKeyboardButton(
             text="{} >".format(next_monday.strftime("%d.%m.%Y")),
-            callback_data=next_monday.isoformat(),
+            callback_data=states.TimetableWeekSelection.build_pattern.format(next_monday.isoformat()),
         ),
     ]
     keyboard = build_keyboard_menu(kb_buttons, 3)
@@ -145,7 +166,12 @@ def show_day_timetable(update: Update, ctx: CallbackContext, session: Session, u
     if not update.callback_query:
         requested_date = dt.date.today()
     else:
-        requested_date = dt.datetime.strptime(update.callback_query.data, "%Y-%m-%d").date()
+        requested_date = states.TimetableDaySelection.parse_pattern.match(update.callback_query.data)
+        if requested_date is None:
+            return None
+        else:
+            requested_date = requested_date.group(1)
+        requested_date = dt.datetime.strptime(requested_date, "%Y-%m-%d").date()
 
     yesterday = requested_date - dt.timedelta(days=1)
     tomorrow = requested_date + dt.timedelta(days=1)
@@ -153,15 +179,15 @@ def show_day_timetable(update: Update, ctx: CallbackContext, session: Session, u
     kb_buttons = [
         InlineKeyboardButton(
             text="< {}".format(yesterday.strftime("%d.%m.%Y")),
-            callback_data=yesterday.isoformat(),
+            callback_data=states.TimetableDaySelection.build_pattern.format(yesterday.isoformat()),
         ),
         InlineKeyboardButton(
             text="Сьогодні",
-            callback_data=dt.date.today().isoformat(),
+            callback_data=states.TimetableDaySelection.build_pattern.format(dt.date.today().isoformat()),
         ),
         InlineKeyboardButton(
             text="{} >".format(tomorrow.strftime("%d.%m.%Y")),
-            callback_data=tomorrow.isoformat(),
+            callback_data=states.TimetableDaySelection.build_pattern.format(tomorrow.isoformat()),
         ),
     ]
     keyboard = build_keyboard_menu(kb_buttons, 3)

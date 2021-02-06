@@ -36,7 +36,6 @@ def run():
         fallbacks=[
             CallbackQueryHandler(commands.home, pattern=r"^{}$".format(states.END))
         ],
-        per_chat=True,
     )
     dp.add_handler(select_group_handler)
 
@@ -45,23 +44,11 @@ def run():
         entry_points=[CommandHandler("start", commands.start)],
         states=select_group_handler.states,
         fallbacks=[],
-        per_chat=True,
     )
     dp.add_handler(start_handler)
 
     # /help
     dp.add_handler(CommandHandler("help", commands.help))
-
-    # /week
-    dp.add_handler(ConversationHandler(
-        entry_points=[CommandHandler("week", commands.show_week_timetable)],
-        states={
-            states.TimetableWeekSelection: [CallbackQueryHandler(commands.show_week_timetable,
-                                                                 pattern=states.TimetableWeekSelection.parse_pattern)],
-        },
-        fallbacks=[],
-        per_chat=True,
-    ))
 
     # /day
     dp.add_handler(ConversationHandler(
@@ -71,7 +58,18 @@ def run():
                                                                 pattern=states.TimetableDaySelection.parse_pattern)],
         },
         fallbacks=[],
-        per_chat=True,
+        allow_reentry=True,
+    ))
+
+    # /week
+    dp.add_handler(ConversationHandler(
+        entry_points=[CommandHandler("week", commands.show_week_timetable)],
+        states={
+            states.TimetableWeekSelection: [CallbackQueryHandler(commands.show_week_timetable,
+                                                                 pattern=states.TimetableWeekSelection.parse_pattern)],
+        },
+        fallbacks=[],
+        allow_reentry=True,
     ))
 
     updater.start_polling()

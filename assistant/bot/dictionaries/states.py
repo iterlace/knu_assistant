@@ -52,13 +52,13 @@ UserSelectSubgroups = State("select_subgroups",
 
 
 TimetableWeekSelection = State("timetable_week_selection",
-                               "{}",
-                               re.compile(r"^(\d{4}-\d{2}-\d{2})$"))
+                               "tt_week_selection_{}",
+                               re.compile(r"^tt_week_selection_(\d{4}-\d{2}-\d{2})$"))
 
 
 TimetableDaySelection = State("timetable_day_selection",
-                              "{}",
-                              re.compile(r"^(\d{4}-\d{2}-\d{2})$"))
+                              "tt_day_selection_{}",
+                              re.compile(r"^tt_day_selection_(\d{4}-\d{2}-\d{2})$"))
 
 
 END = ConversationHandler.END
