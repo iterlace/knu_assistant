@@ -52,8 +52,8 @@ HELLO_MESSAGE = """
 Оригінальний розклад було завантажено з https://mytimetable.live
 Фідбек: @iterlace
 
-v{}
-""".format(assistant.__version__)
+v{version}
+""".format(version=assistant.__version__)
 
 
 @db_session

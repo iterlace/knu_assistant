@@ -280,7 +280,7 @@ def link(update: Update, ctx: CallbackContext, session: Session, user: User):
         )
         return end(update=update, ctx=ctx)
 
-    ctx.user_data["lesson"] = lesson
+    ctx.user_data["lesson_id"] = lesson_id
     ctx.user_data["init"] = True
     return set_lesson_link(update=update, ctx=ctx, session=session, user=user)
 
@@ -288,7 +288,8 @@ def link(update: Update, ctx: CallbackContext, session: Session, user: User):
 @db_session
 @acquire_user
 def set_lesson_link(update: Update, ctx: CallbackContext, session: Session, user: User):
-    lesson = ctx.user_data["lesson"]
+    lesson_id = ctx.user_data["lesson_id"]
+    lesson = session.query(Lesson).get(lesson_id)
 
     if ctx.user_data.setdefault("init", False):
         ctx.user_data["init"] = False
