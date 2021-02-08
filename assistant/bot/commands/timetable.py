@@ -150,8 +150,7 @@ def show_week_timetable(update: Update, ctx: CallbackContext, session: Session, 
     timetable_str = build_timetable_week(session, user, requested_monday)
 
     if not update.callback_query:
-        bot.send_message(
-            update.effective_user.id,
+        update.message.reply_text(
             text=timetable_str,
             parse_mode=ParseMode.HTML,
             reply_markup=InlineKeyboardMarkup(keyboard),
@@ -161,7 +160,7 @@ def show_week_timetable(update: Update, ctx: CallbackContext, session: Session, 
         update.callback_query.answer()
         try:
             update.callback_query.edit_message_text(
-                timetable_str,
+                text=timetable_str,
                 parse_mode=ParseMode.HTML,
                 reply_markup=InlineKeyboardMarkup(keyboard),
                 disable_web_page_preview=True,
@@ -211,8 +210,7 @@ def show_day_timetable(update: Update, ctx: CallbackContext, session: Session, u
     timetable_str = "{header}\n\n{body}".format(header=header, body=timetable_str)
 
     if not update.callback_query:
-        bot.send_message(
-            update.effective_user.id,
+        update.message.reply_text(
             text=timetable_str,
             parse_mode=ParseMode.HTML,
             reply_markup=InlineKeyboardMarkup(keyboard),
@@ -222,7 +220,7 @@ def show_day_timetable(update: Update, ctx: CallbackContext, session: Session, u
         update.callback_query.answer()
         try:
             update.callback_query.edit_message_text(
-                timetable_str,
+                text=timetable_str,
                 parse_mode=ParseMode.HTML,
                 reply_markup=InlineKeyboardMarkup(keyboard),
                 disable_web_page_preview=True,
@@ -258,7 +256,7 @@ def link(update: Update, ctx: CallbackContext, session: Session, user: User):
         answers = ["???", "Це ж не твій предмет!", "Знущаєшся з мене?",
                    "Введіть посилання:\n<i>жартую. як і ти.</i>"]
         update.message.reply_text(
-            random.choice(answers),
+            text=random.choice(answers),
             parse_mode=ParseMode.HTML,
         )
         return end(update=update, ctx=ctx)
@@ -273,8 +271,7 @@ def link(update: Update, ctx: CallbackContext, session: Session, user: User):
         .first()
     )
     if moderator is None:
-        bot.send_message(
-            user.tg_id,
+        update.message.reply_text(
             text=f"{e_cancel} Ваша група наразі не має модератора! Будь ласка, зверніться до @iterlace!",
             parse_mode=ParseMode.HTML,
         )
@@ -293,7 +290,7 @@ def set_lesson_link(update: Update, ctx: CallbackContext, session: Session, user
 
     if ctx.user_data.setdefault("init", False):
         ctx.user_data["init"] = False
-        bot.send_message(
+        update.message.reply_text(
             update.effective_user.id,
             "Введіть посилання:",
             parse_mode=ParseMode.HTML,
