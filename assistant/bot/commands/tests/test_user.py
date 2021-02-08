@@ -166,6 +166,47 @@ class TestChangeGroup:
             assert user.students_group == group
 
     @mark.asyncio
+    async def test_moderator(self, client: TelegramClient, db_session, use_bot):
+        # faculty that would be selected
+        csc = FacultyFactory(name="CSC", shortcut="CSC")
+        # group that would be selected
+        group = StudentsGroupFactory(course=1, faculty=csc)
+        # Current user
+        user = UserFactory(
+            tg_id=(await client.get_me()).id,
+            students_group=group,
+            is_group_moderator=True,
+        )
+        db_session.commit()
+
+        async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
+            await conv.send_message("/change_group")
+            r: Message
+
+            # caution
+            r = await conv.get_response()
+            assert "втратите роль модератора" in r.text
+
+            # course choice
+            r = await conv.get_response()
+            await r.click(data=b"1")
+
+            # faculty choice
+            r = await conv.get_edit()
+            await r.click(data=str(csc.id).encode("utf-8"))
+
+            # group choice
+            r = await conv.get_edit()
+            await r.click(data=str(group.id).encode("utf-8"))
+
+            # "Group was set" notification
+            r = await conv.get_edit()
+            await asyncio.sleep(0.1)
+
+            db_session.refresh(user)
+            assert not user.is_group_moderator
+
+    @mark.asyncio
     async def test_end_button(self, client: TelegramClient, db_session, use_bot):
         """ Test END callback button works properly """
         group = StudentsGroupFactory()

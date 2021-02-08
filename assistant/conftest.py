@@ -43,6 +43,12 @@ TG_SESSION = os.environ["TELETHON_SESSION"]
 
 session = Session()
 
+@event.listens_for(session, "after_transaction_end")
+def restart_savepoint(session, transaction):
+    """ Each time that SAVEPOINT ends, reopen it """
+    if transaction.nested and not transaction._parent.nested:
+        session.begin_nested()
+
 
 def reload_db_session_decorator():
     import assistant
@@ -84,8 +90,9 @@ def use_bot(db_session):
         # A trick to speed up updater.stop (9s vs 1ms)
         # Job queue and httpd, which can break further tests, are stopped in blocking mode,
         # but other parts would be terminated in a separate daemon.
-        updater.job_queue.stop()
+
         updater._stop_httpd()
+        updater.job_queue.stop()
         stop_thread = threading.Thread(target=updater.stop, daemon=True)
         stop_thread.start()
 
@@ -214,16 +221,11 @@ def db():
 
 @pytest.fixture(scope="function", autouse=True)
 def db_session(db) -> SqaSession:
+    global session
+    session.invalidate()
     session.begin_nested()  # Savepoint
-
-    @event.listens_for(session, "after_transaction_end")
-    def restart_savepoint(session, transaction):
-        """ Each time that SAVEPOINT ends, reopen it """
-        if transaction.nested and not transaction._parent.nested:
-            session.begin_nested()
 
     yield session
     
     session.rollback()
-    session.close()
-    event.remove(session, "after_transaction_end", restart_savepoint)
+    session.invalidate()

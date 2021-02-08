@@ -216,6 +216,8 @@ def select_subgroups(update: Update, ctx: CallbackContext, session: Session, use
         group = session.query(StudentsGroup).get(ctx.user_data["group_id"])
         user.students_group = group
 
+        user.is_group_moderator = False
+
         user.subgroups.clear()
         for lesson in ctx.user_data["subgroups"]:
             lesson = session.merge(lesson)

@@ -91,7 +91,6 @@ def run():
     dp.add_handler(CallbackQueryHandler(commands.reject_link_request,
                                         pattern=states.ModeratorRejectLink.parse_pattern))
 
-
     updater.start_polling()
 
     try:

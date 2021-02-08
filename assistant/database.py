@@ -257,6 +257,9 @@ class Teacher(Base):
         return "<Teacher(id={}, first_name={}, last_name={}, middle_name={})>"\
             .format(self.id, self.first_name, self.last_name, self.middle_name)
 
+    def __str__(self):
+        return self.full_name
+
     @property
     def full_name(self):
         return " ".join((self.last_name, self.first_name, self.middle_name)).strip()
