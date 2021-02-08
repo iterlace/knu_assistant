@@ -23,7 +23,8 @@ setup(
         "requests==2.25.0",
         "aiohttp==3.7.3",
         "urllib3==1.26.2",
-        "psycopg2==2.8.6"
+        "psycopg2==2.8.6",
+        "sentry-sdk==0.19.5",
     ],
     setup_requires=[
         "pytest-runner",

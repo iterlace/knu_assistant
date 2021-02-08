@@ -1,5 +1,6 @@
 from logging.config import dictConfig
 
+import sentry_sdk
 from telegram import Bot
 from environs import Env
 
@@ -71,3 +72,14 @@ dictConfig({
         "handlers": ["default"],
     },
 })
+
+try:
+    SENTRY_DSN = env.str("SENTRY_DSN")
+except Exception as e:
+    # TODO
+    pass
+else:
+    sentry_sdk.init(
+        SENTRY_DSN,
+        traces_sample_rate=1.0
+    )
