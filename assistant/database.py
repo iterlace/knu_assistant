@@ -17,7 +17,7 @@ import assistant.config as config
 logger = logging.getLogger(__name__)
 
 
-db = create_engine(config.DB_STRING, pool_size=20, max_overflow=0)
+db = create_engine(config.DB_STRING, pool_size=40, max_overflow=10)
 Base = declarative_base()
 meta = MetaData(db)
 Session = sessionmaker(bind=db, autoflush=False)
