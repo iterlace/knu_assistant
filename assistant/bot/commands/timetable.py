@@ -295,8 +295,7 @@ def set_lesson_link(update: Update, ctx: CallbackContext, session: Session, user
     if ctx.user_data.setdefault("init", False):
         ctx.user_data["init"] = False
         update.message.reply_text(
-            update.effective_user.id,
-            "Введіть посилання:",
+            text="Введіть посилання:",
             parse_mode=ParseMode.HTML,
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton(text=p_cancel, callback_data=states.END)
