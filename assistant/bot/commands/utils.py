@@ -9,7 +9,7 @@ from telegram import (
     ParseMode,
 )
 
-from config import bot
+from assistant.config import bot
 from assistant.bot.dictionaries import states
 
 
