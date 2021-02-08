@@ -1,0 +1,36 @@
+version: 2.1
+
+orbs:
+  python: circleci/python@0.2.1
+
+jobs:
+  build-and-test:
+    docker:
+      - image: circleci/python:3.8.7-buster
+        environment:
+          DEBUG: 0
+          TELEGRAM_APP_ID: $TELEGRAM_APP_ID
+          TELETGRAM_APP_HASH: $TELEGRAM_APP_HASH
+          TELETHON_SESSION: $TELETHON_SESSION
+          BOT_WORKERS: 1
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: knu_assistant
+          DB_USERNAME: root
+          DB_URL: postgresql://root@localhost/knu_assistant
+      - image: circleci/postgres:13.0
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_DB: knu_assistant
+    steps:
+      - checkout
+      - run: sudo apt update && sudo apt install -y postgresql-client-13
+      - run: touch .env
+      - run:
+          name: Test
+          command: python setup.py test
+
+workflows:
+  main:
+    jobs:
+      - build-and-test
