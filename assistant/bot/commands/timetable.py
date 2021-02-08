@@ -253,11 +253,29 @@ def link(update: Update, ctx: CallbackContext, session: Session, user: User):
         )
         .first()
     )
+
     if lesson is None:
         answers = ["???", "Це ж не твій предмет!", "Знущаєшся з мене?",
                    "Введіть посилання:\n<i>жартую. як і ти.</i>"]
         update.message.reply_text(
             random.choice(answers),
+            parse_mode=ParseMode.HTML,
+        )
+        return end(update=update, ctx=ctx)
+
+    moderator = (
+        session
+        .query(User)
+        .filter(
+            (User.students_group_id == user.students_group.id) &
+            (User.is_group_moderator == True)
+        )
+        .first()
+    )
+    if moderator is None:
+        bot.send_message(
+            user.tg_id,
+            text=f"{e_cancel} Ваша група наразі не має модератора! Будь ласка, зверніться до @iterlace!",
             parse_mode=ParseMode.HTML,
         )
         return end(update=update, ctx=ctx)
