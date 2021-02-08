@@ -36,13 +36,18 @@ class TestTimetableBuilders:
             starts_at=dt.time(hour=10, minute=0, second=0),
             ends_at=dt.time(hour=11, minute=30, second=0),
         )
+        lesson = single_lesson.lesson
         user = UserFactory(students_group=single_lesson.lesson.students_group)
+        db_session.commit()
+
         result = build_timetable_lesson(db_session, user, single_lesson)
 
-        assert result == f"10:00 - 11:30\n" \
-                         f"{e_books} <b>{single_lesson.lesson.name}</b> " \
-                         f"({single_lesson.lesson.represent_lesson_format()})\n" \
-                         f"{e_teacher} {single_lesson.lesson.teachers[0].short_name}"
+        assert result == f"""\
+10:00 - 11:30
+{e_books} <b>{single_lesson.lesson.name}</b> ({single_lesson.lesson.represent_lesson_format()})
+{e_teacher} {single_lesson.lesson.teachers[0].short_name}
+Встановити посилання: /link@{lesson.id}\
+"""
 
     def test_build_timetable_day(self, db_session):
         group = StudentsGroupFactory()
@@ -93,10 +98,12 @@ class TestTimetableBuilders:
 08:40 - 10:15
 {e_books} <b>M</b> ({math.represent_lesson_format()})
 {e_teacher} {math.teachers[0].short_name}
+Встановити посилання: /link@{math.id}
 
 10:35 - 12:10
 {e_books} <b>P</b> ({programming_1.represent_lesson_format()})
-{e_teacher} {koval.short_name}\
+{e_teacher} {koval.short_name}
+Встановити посилання: /link@{programming_1.id}\
 """
 
     def test_build_timetable_week(self, db_session):
@@ -125,7 +132,8 @@ class TestTimetableBuilders:
 [ <b>Понеділок</b> ]
 08:40 - 10:15
 {e_books} <b>M</b> ({math.represent_lesson_format()})
-{e_teacher} {math.teachers[0].short_name}\
+{e_teacher} {math.teachers[0].short_name}
+Встановити посилання: /link@{math.id}\
 """
 
 
@@ -141,7 +149,7 @@ class TestTimetableCommands:
         tomorrow = today + dt.timedelta(days=1)
 
         with mock.patch("assistant.bot.commands.timetable.dt") as dt_mock:
-            dt_mock.date.today = mock.Mock(return_value=today)
+            dt_mock.date.today = mock.MagicMock(return_value=today)
             dt_mock.datetime = dt.datetime
             dt_mock.timedelta = dt.timedelta
 
@@ -200,7 +208,7 @@ class TestTimetableCommands:
         next_monday = current_monday + dt.timedelta(days=7)
 
         with mock.patch("assistant.bot.commands.timetable.dt") as dt_mock:
-            dt_mock.date.today = mock.Mock(return_value=current_monday)
+            dt_mock.date.today = mock.MagicMock(return_value=current_monday)
             dt_mock.datetime = dt.datetime
             dt_mock.timedelta = dt.timedelta
 

@@ -57,8 +57,7 @@ class TestAcquireUser:
             assert user.tg_id == 10000000
             assert user.tg_username == "john"
 
-        update = mock.Mock()
-        update.effective_user = mock.Mock()
+        update = mock.MagicMock()
         update.effective_user.id = 10000000
         update.effective_user.username = "john"
 
@@ -70,8 +69,9 @@ class TestAcquireUser:
         """ Test if user argument is already passed to the function """
         from assistant.bot.decorators import acquire_user
 
-        update = mock.Mock()
+        update = mock.MagicMock()
         user_ = UserFactory()
+        db_session.commit()
 
         @acquire_user
         def handler(update, session, user):
@@ -83,14 +83,14 @@ class TestAcquireUser:
         """ Test if actual username and database username differs, acquire_user updates it """
         from assistant.bot.decorators import acquire_user
 
-        update = mock.Mock()
-        update.effective_user = mock.Mock()
+        update = mock.MagicMock()
         update.effective_user.id = 10000000
         update.effective_user.username = "john"
         user_ = UserFactory(
             tg_id=update.effective_user.id,
             tg_username="michael",
         )
+        db_session.commit()
 
         @acquire_user
         def handler(update, session, user):

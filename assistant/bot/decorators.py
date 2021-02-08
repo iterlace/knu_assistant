@@ -85,3 +85,21 @@ def admins_only(func):
     return inner
 
 
+# TODO
+def moderation_accept(func):
+
+    @wraps(func)
+    def inner(update, ctx, session, **kwargs):
+        pass
+
+    return inner
+
+
+# TODO
+def moderation_reject(func):
+
+    @wraps(func)
+    def inner(update, ctx, session, **kwargs):
+        pass
+
+    return inner

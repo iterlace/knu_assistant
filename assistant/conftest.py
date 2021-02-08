@@ -44,14 +44,6 @@ TG_SESSION = os.environ["TELETHON_SESSION"]
 session = Session()
 
 
-def pytest_configure(config):
-    sys._called_from_test = True
-
-
-def pytest_unconfigure(config):
-    del sys._called_from_test
-
-
 def reload_db_session_decorator():
     import assistant
     importlib.reload(assistant.bot.commands.basic)

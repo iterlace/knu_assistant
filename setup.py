@@ -1,9 +1,11 @@
 from setuptools import setup
 from setuptools import find_packages
+import pkg_resources
+from assistant import __version__
 
 setup(
     name="KNU Assistant",
-    version="0.0.1",
+    version=__version__,
     packages=find_packages(exclude=["*tests*"]),
     package_data={"migrations": ["alembic.ini"]},
     url="",
@@ -32,7 +34,8 @@ setup(
         "mock==4.0.3",
         "pytest-asyncio==0.14.0",
         "telethon==1.17.5",
-        "factory_boy==3.2.0"
+        "factory_boy==3.2.0",
+        "pytest-mock==3.5.1",
     ],
     entry_points={
         "console_scripts": [

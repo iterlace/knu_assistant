@@ -26,6 +26,9 @@ class State(str):
 
         return obj
 
+    def build(self, *args, **kwargs):
+        return self.build_pattern.format(*args, **kwargs)
+
 
 EmptyStep = State('')
 
@@ -60,6 +63,20 @@ TimetableDaySelection = State("timetable_day_selection",
                               "tt_day_selection_{}",
                               re.compile(r"^tt_day_selection_(\d{4}-\d{2}-\d{2})$"))
 
+
+# ========= Moderation Requests =========
+
+# Change Lesson link
+LinkWait = State("link_wait",
+                 "{}",
+                 re.compile(r"^.*$"))
+
+ModeratorAcceptLink = State("moderator_accept_lesson_link",
+                            "moderator_accept_lesson_link_{}",
+                            re.compile(r"^moderator_accept_lesson_link_(\d+)$"))
+ModeratorRejectLink = State("moderator_reject_lesson_link",
+                            "moderator_reject_lesson_link_{}",
+                            re.compile(r"^moderator_reject_lesson_link_(\d+)$"))
 
 END = ConversationHandler.END
 

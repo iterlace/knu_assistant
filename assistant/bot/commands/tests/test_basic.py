@@ -48,7 +48,7 @@ class TestStart:
             r: Message
 
             r = await conv.get_response()
-            assert "Привіт!" in r.raw_text
+            assert "КНУ.Органайзер" in r.raw_text
             assert db_session.query(User).get((await client.get_me()).id) is not None
 
             # skip the second message
@@ -100,6 +100,8 @@ class TestStart:
 
         # Current user
         user = UserFactory(tg_id=(await client.get_me()).id, students_group=group)
+
+        db_session.commit()
 
         async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
             await conv.send_message("/start")

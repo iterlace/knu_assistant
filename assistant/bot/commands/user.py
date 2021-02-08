@@ -18,6 +18,7 @@ from assistant.bot.decorators import acquire_user, db_session
 from assistant.bot.dictionaries import states
 from assistant.bot.dictionaries.phrases import *
 from assistant.bot.keyboards import build_keyboard_menu
+from assistant.bot.commands.utils import end
 
 logger = logging.getLogger(__name__)
 
@@ -216,5 +217,5 @@ def select_subgroups(update: Update, ctx: CallbackContext, session: Session, use
                 text="Підгрупи визначено!",
                 reply_markup=None
             )
-        return states.END
+        return end(update=update, ctx=ctx)
 

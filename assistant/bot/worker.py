@@ -1,4 +1,5 @@
 import logging
+import re
 
 from telegram.ext import (
     Updater,
@@ -9,6 +10,7 @@ from telegram.ext import (
     ConversationHandler,
 )
 
+import bot.commands.utils
 from assistant import config
 from assistant.bot import commands
 from assistant.bot.dictionaries import states
@@ -34,7 +36,7 @@ def run():
                                                               pattern=states.UserSelectSubgroups.parse_pattern)]
         },
         fallbacks=[
-            CallbackQueryHandler(commands.home, pattern=r"^{}$".format(states.END))
+            CallbackQueryHandler(commands.end_callback, pattern=r"^{}$".format(states.END)),
         ],
     )
     dp.add_handler(select_group_handler)
@@ -71,6 +73,25 @@ def run():
         fallbacks=[],
         allow_reentry=True,
     ))
+
+    # /link@lesson_id
+    dp.add_handler(ConversationHandler(
+        entry_points=[MessageHandler(Filters.text & Filters.regex(r"/link@(\d+)"), commands.link)],
+        states={
+            states.LinkWait: [MessageHandler(Filters.text, commands.set_lesson_link)],
+        },
+        fallbacks=[
+            CallbackQueryHandler(commands.end_callback, pattern=r"^{}$".format(states.END)),
+        ],
+    ))
+
+    # ======== Moderation ========
+    # Lesson link change
+    dp.add_handler(CallbackQueryHandler(commands.accept_link_request,
+                                        pattern=states.ModeratorAcceptLink.parse_pattern))
+    dp.add_handler(CallbackQueryHandler(commands.reject_link_request,
+                                        pattern=states.ModeratorRejectLink.parse_pattern))
+
 
     updater.start_polling()
 

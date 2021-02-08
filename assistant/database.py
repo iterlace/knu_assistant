@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 db = create_engine(config.DB_STRING, pool_size=20, max_overflow=0)
 Base = declarative_base()
 meta = MetaData(db)
-Session = sessionmaker(bind=db)
+Session = sessionmaker(bind=db, autoflush=False)
 
 
 class User(Base):
@@ -224,6 +224,14 @@ class Lesson(Base):
     def __repr__(self):
         return "<Lesson(id={}, name={})>".format(self.id, self.name)
 
+    def __str__(self):
+        name = "{}".format(self.name)
+        if self.subgroup is not None:
+            teachers = ", ".join([t.short_name for t in self.teachers])
+            name += " ({}, {})".format(self.represent_lesson_format(), teachers)
+
+        return name
+
 
 class Teacher(Base):
     __tablename__ = "teachers"
@@ -294,10 +302,34 @@ class Request(Base):
         nullable=False,
     )
 
-    # request body (e.g. {"action": "edit_lesson_link", "lesson_id": 1, "link": "https://dc.zoom.us/xxx"})
-    body = Column(
+    # text of the moderator message
+    message = Column(
+        Text,
+        nullable=False,
+    )
+
+    # callback data for the 'Accept' button
+    accept_callback = Column(
+        Text,
+        nullable=False,
+    )
+
+    # callback data for the 'Reject' button
+    reject_callback = Column(
+        Text,
+        nullable=False,
+    )
+
+    # request meta (e.g. {"lesson_id": 1, "link": "https://dc.zoom.us/xxx"})
+    meta = Column(
         pg.JSONB,
         nullable=False,
+    )
+
+    is_resolved = Column(
+        Boolean,
+        nullable=False,
+        default=False,
     )
 
     students_group = relationship("StudentsGroup", back_populates="requests")

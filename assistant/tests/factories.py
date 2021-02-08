@@ -15,6 +15,7 @@ from assistant.database import (
     SingleLesson,
     Teacher,
     Faculty,
+    Request,
     # M2M
     LessonTeacher,
     LessonSubgroupMember,
@@ -119,4 +120,30 @@ class SingleLessonFactory(SQLAlchemyModelFactory):
             starts_dt = dt.datetime(1970, 1, 1, self.starts_at.hour, self.starts_at.minute)
             ends_dt = starts_dt + dt.timedelta(hours=1, minutes=30)
             self.ends_at = ends_dt.time()
+
+
+class RequestFactory(SQLAlchemyModelFactory):
+    class Meta:
+        model = Request
+        sqlalchemy_session = session
+
+    initiator = factory.SubFactory(UserFactory)
+    moderator = factory.SubFactory(UserFactory)
+    message = fuzzy.FuzzyText(length=50)
+    accept_callback = "accept_test_1"
+    reject_callback = "reject_test_1"
+    meta = factory.LazyFunction(lambda: dict())
+    is_resolved = False
+
+    @factory.post_generation
+    def students_group(self, create, extracted, **kwargs):
+        if not create:
+            return
+        if extracted is not None:
+            self.students_group = extracted
+        else:
+            if self.initiator is not None:
+                self.students_group = self.initiator.students_group
+            else:
+                self.students_group = StudentsGroupFactory()
 

@@ -6,6 +6,7 @@ import urllib.parse
 import datetime as dt
 import re
 
+from psycopg2 import errors
 from sqlalchemy.orm.session import Session as SqaSession
 
 from assistant.database import Session
@@ -33,6 +34,9 @@ class TimetableScrapper:
         raw_groups = self.get("https://api.mytimetable.live/rest/groups/", {"univ": 1})
         for raw_group in raw_groups["results"]:
             try:
+                if not raw_group["name"].startswith("К-"):
+                    continue
+
                 raw_timetable = self.get("https://api.mytimetable.live/rest/timetable/", {"group": raw_group["slug"]})
                 if raw_timetable is None or "lessons" not in raw_timetable.keys():
                     continue
@@ -46,6 +50,7 @@ class TimetableScrapper:
                         shortcut=raw_faculty["short_name"] or raw_faculty["name"],
                     )
                     self.db.add(faculty)
+                    self.db.flush()
 
                 # Get/Create a group
                 group = self.db.query(StudentsGroup).filter_by(
@@ -60,6 +65,7 @@ class TimetableScrapper:
                         faculty=faculty,
                     )
                     self.db.add(group)
+                    self.db.flush()
                 group_timetable = dict()  # {(theme, teachers, subgroup, format): [raw_lessons]}
 
                 for raw_lesson in raw_timetable["lessons"]:
@@ -82,7 +88,6 @@ class TimetableScrapper:
                                 lesson_format=raw_lesson["format"],
                             )
                             self.db.add(lesson)
-
                             # Attach teachers to the lesson
                             for raw_teacher in raw_lesson["teachers"]:
                                 match = full_name_mask.match(raw_teacher["full_name"])
@@ -101,6 +106,7 @@ class TimetableScrapper:
                                     )
                                     self.db.add(teacher)
                                 lesson.teachers.append(teacher)
+                            self.db.flush()
                         group_timetable[lesson_key] = lesson
 
                     starts_at = None
@@ -118,7 +124,14 @@ class TimetableScrapper:
                             starts_at=starts_at,
                             ends_at=ends_at,
                         )
+                        # l = group_timetable[lesson_key]
+                        # if dt.datetime.strptime(date, "%Y-%m-%d").date() == dt.date(2021, 1, 27) \
+                        #         and starts_at == dt.time(12, 20) \
+                        #         and ends_at == dt.time(13, 55) \
+                        #         and l.name == "Чисельний аналіз":
+                        #     logger.info("{} {} ({})".format(single_lesson.lesson, single_lesson, raw_lesson))
                         self.db.add(single_lesson)
+                        self.db.flush()
             except Exception as e:
                 logger.error("got error while parsing {}: {}".format(raw_group.get("name", None), str(e)))
                 continue
@@ -136,7 +149,7 @@ class TimetableScrapper:
 
         response = self.session.get(url)
         if response.status_code < 200 or response.status_code >= 300:
-            logger.error("got error fetching {} ({}): {}".format(url, response.status_code, response.content))
+            # logger.error("got error fetching {} ({}): {}".format(url, response.status_code, response.content))
             return None
         try:
             body: Dict = response.json()

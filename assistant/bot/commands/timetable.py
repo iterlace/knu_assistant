@@ -1,6 +1,7 @@
 import datetime as dt
 import logging
 import re
+import random
 
 import telegram as tg
 from telegram import (
@@ -18,16 +19,26 @@ from telegram.ext import (
 from sqlalchemy.orm import Session
 
 from assistant.config import bot
-from assistant.database import User, StudentsGroup, Lesson, SingleLesson, Teacher, LessonSubgroupMember
+from assistant.database import (
+    User,
+    StudentsGroup,
+    Lesson,
+    SingleLesson,
+    Teacher,
+    LessonSubgroupMember,
+    Request,
+)
 from assistant.bot.decorators import acquire_user, db_session, moderators_only, admins_only
 from assistant.bot.dictionaries import states, days_of_week
 from assistant.bot.dictionaries import timetable
 from assistant.bot.keyboards import build_keyboard_menu
 from assistant.bot.dictionaries.phrases import *
 from assistant.utils import get_monday
+from assistant.bot.commands.moderation import send_request
+from assistant.bot.commands.utils import end
 
 logger = logging.getLogger(__name__)
-__all__ = ["show_week_timetable", "show_day_timetable"]
+__all__ = ["show_week_timetable", "show_day_timetable", "link", "set_lesson_link"]
 
 ENDING_SPACES_MASK = re.compile(r"^(.*)(?<!\s)(\s+)$", flags=re.S)
 
@@ -46,16 +57,16 @@ def build_timetable_lesson(session: Session, user: User, lesson: SingleLesson):
         teachers=teachers_formatted
     )
     if lesson.lesson.link:
-        result_str += "<a href=\"{}\">Посилання</a>. Змінити: /link@{}\n"\
+        result_str += "<a href=\"{}\"><u><i>Посилання на урок</i></u></a>. Змінити: /link@{}\n"\
             .format(lesson.lesson.link, lesson.lesson_id)
     else:
         result_str += "Встановити посилання: /link@{}\n"\
             .format(lesson.lesson_id)
 
-    if lesson.comment:
-        result_str += "<i>{} (/comment@{})</i>".format(lesson.comment, lesson.id)
-    else:
-        result_str += "Додати коментар: /comment@{}".format(lesson.id)
+    # if lesson.comment:
+    #     result_str += "<i>{} (/comment@{})</i>".format(lesson.comment, lesson.id)
+    # else:
+    #     result_str += "Додати коментар: /comment@{}".format(lesson.id)
     result_str = ENDING_SPACES_MASK.sub(r"\1", result_str)  # remove \n in the ending
     return result_str
 
@@ -144,6 +155,7 @@ def show_week_timetable(update: Update, ctx: CallbackContext, session: Session, 
             text=timetable_str,
             parse_mode=ParseMode.HTML,
             reply_markup=InlineKeyboardMarkup(keyboard),
+            disable_web_page_preview=True,
         )
     else:
         update.callback_query.answer()
@@ -152,6 +164,7 @@ def show_week_timetable(update: Update, ctx: CallbackContext, session: Session, 
                 timetable_str,
                 parse_mode=ParseMode.HTML,
                 reply_markup=InlineKeyboardMarkup(keyboard),
+                disable_web_page_preview=True,
             )
         except tg.TelegramError as e:
             # FIXME
@@ -203,6 +216,7 @@ def show_day_timetable(update: Update, ctx: CallbackContext, session: Session, u
             text=timetable_str,
             parse_mode=ParseMode.HTML,
             reply_markup=InlineKeyboardMarkup(keyboard),
+            disable_web_page_preview=True,
         )
     else:
         update.callback_query.answer()
@@ -211,11 +225,86 @@ def show_day_timetable(update: Update, ctx: CallbackContext, session: Session, u
                 timetable_str,
                 parse_mode=ParseMode.HTML,
                 reply_markup=InlineKeyboardMarkup(keyboard),
+                disable_web_page_preview=True,
             )
         except tg.TelegramError as e:
             # FIXME
             if "Message is not modified" not in str(e):
                 raise e
     return states.TimetableDaySelection
+
+
+@db_session
+@acquire_user
+def link(update: Update, ctx: CallbackContext, session: Session, user: User):
+    lesson_id = int(ctx.match.group(1))
+    lesson = (
+        session
+        .query(Lesson)
+        # join user's subgroups
+        .outerjoin(
+            LessonSubgroupMember,
+            LessonSubgroupMember.c.user_id == user.tg_id
+        )
+        .filter(
+            (Lesson.id == lesson_id) &
+            ((Lesson.subgroup == None) | (Lesson.id == LessonSubgroupMember.c.lesson_id)) &
+            (Lesson.students_group_id == user.students_group_id)
+        )
+        .first()
+    )
+    if lesson is None:
+        answers = ["???", "Це ж не твій предмет!", "Знущаєшся з мене?",
+                   "Введіть посилання:\n<i>жартую. як і ти.</i>"]
+        update.message.reply_text(
+            random.choice(answers),
+            parse_mode=ParseMode.HTML,
+        )
+        return end(update=update, ctx=ctx)
+
+    ctx.user_data["lesson"] = lesson
+    ctx.user_data["init"] = True
+    return set_lesson_link(update=update, ctx=ctx, session=session, user=user)
+
+
+@db_session
+@acquire_user
+def set_lesson_link(update: Update, ctx: CallbackContext, session: Session, user: User):
+    lesson = ctx.user_data["lesson"]
+
+    if ctx.user_data.setdefault("init", False):
+        ctx.user_data["init"] = False
+        bot.send_message(
+            update.effective_user.id,
+            "Введіть посилання:",
+            parse_mode=ParseMode.HTML,
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton(text=p_cancel, callback_data=states.END)
+            ]]),
+        )
+        return states.LinkWait
+    else:
+        link = update.message.text.strip()
+        message = "@{user} хоче встановити нове посилання для <b>{lesson}</b>:\n{link}"\
+            .format(user=user.tg_username, lesson=str(lesson), link=link)
+        if lesson.link:
+            message += "\nзамість\n{}".format(lesson.link)
+
+        request = Request(
+            initiator_id=user.tg_id,
+            message=message,
+            meta={
+                "lesson_id": lesson.id,
+                "link": link,
+            },
+            students_group_id=user.students_group.id,
+        )
+        send_request(
+            request=request,
+            session=session,
+            accept_callback=states.ModeratorAcceptLink,
+            reject_callback=states.ModeratorRejectLink,
+        )
+        return end(update=update, ctx=ctx)
 
 
