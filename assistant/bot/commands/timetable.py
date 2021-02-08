@@ -297,7 +297,7 @@ def set_lesson_link(update: Update, ctx: CallbackContext, session: Session, user
                 "lesson_id": lesson.id,
                 "link": link,
             },
-            students_group_id=user.students_group.id,
+            students_group=user.students_group,
         )
         send_request(
             request=request,
