@@ -36,7 +36,8 @@ from assistant.database import (
 logger = logging.getLogger(__name__)
 
 
-def send_request(request: Request, session: Session, accept_callback: states.State, reject_callback: states.State):
+def send_request(request: Request, session: Session,
+                 accept_callback: states.State, reject_callback: states.State) -> bool:
     """
     Completes the given Request object and sends messages to moderator and initiator
 
@@ -46,7 +47,7 @@ def send_request(request: Request, session: Session, accept_callback: states.Sta
     :param session: DB Session
     :param accept_callback: State object for a "Accept" button callback
     :param reject_callback: State object for a "Reject" button callback
-    :return: None
+    :return: is messages sent successfully
     """
     moderator = (
         session
@@ -58,6 +59,9 @@ def send_request(request: Request, session: Session, accept_callback: states.Sta
         .first()
     )
     request.moderator = moderator
+    if moderator is None:
+        return False
+
     request.moderator_id = moderator.tg_id
 
     if not request.id:
@@ -92,6 +96,7 @@ def send_request(request: Request, session: Session, accept_callback: states.Sta
         text=f"Запит #{request.id} надіслано до модератора групи!",
         parse_mode=ParseMode.HTML,
     )
+    return True
 
 
 @db_session

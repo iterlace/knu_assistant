@@ -4,6 +4,7 @@ from telegram import (
     Update,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    ParseMode,
 )
 from telegram.ext import (
     CallbackContext,
@@ -27,6 +28,14 @@ logger = logging.getLogger(__name__)
 @acquire_user
 def change_group(update: Update, ctx: CallbackContext, session: Session, user: User):
     # Ask for a course
+
+    if user.is_group_moderator:
+        bot.send_message(
+            update.effective_user.id,
+            "<b>Увага!</b>\nПереходячи до іншої групи, ви назавжди втратите роль модератора в даній!",
+            parse_mode=ParseMode.HTML,
+        )
+
     kb_buttons = []
     for course in session.query(StudentsGroup.course).distinct(StudentsGroup.course).order_by(StudentsGroup.course):
         kb_buttons.append(InlineKeyboardButton(
