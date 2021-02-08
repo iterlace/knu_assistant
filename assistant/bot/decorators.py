@@ -2,6 +2,7 @@ from functools import wraps
 import logging
 
 from telegram import Update
+from sqlalchemy.orm import Session as SqaSession
 from sqlalchemy.sql import select, insert, update, delete
 
 from assistant.database import Session
@@ -22,6 +23,7 @@ def db_session(func):
             "session": session,
         })
         output = func(*args, **kwargs)
+        session.close()
         return output
     return inner
 
@@ -40,7 +42,7 @@ def acquire_user(func):
         update: Update = kwargs.get("update", None)
         if update is None:
             update = args[0]
-        session: Session = kwargs.get("session")
+        session: SqaSession = kwargs.get("session")
 
         user = session.query(User).get(update.effective_user.id)
         if user is None:
