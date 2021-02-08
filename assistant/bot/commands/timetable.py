@@ -148,6 +148,8 @@ def show_week_timetable(update: Update, ctx: CallbackContext, session: Session, 
     keyboard = build_keyboard_menu(kb_buttons, 3)
 
     timetable_str = build_timetable_week(session, user, requested_monday)
+    if timetable_str.strip() == "":
+        timetable_str = "На цьому тижні немає занять"
 
     if not update.callback_query:
         update.message.reply_text(
@@ -207,6 +209,8 @@ def show_day_timetable(update: Update, ctx: CallbackContext, session: Session, u
     header = "<b>{day_name}</b> ({date})".format(day_name=days_of_week.DAYS_OF_WEEK[requested_date.weekday()].name,
                                                  date=requested_date.strftime("%d.%m"))
     timetable_str = build_timetable_day(session, user, requested_date)
+    if timetable_str.strip() == "":
+        timetable_str = "Заняття відсутні"
     timetable_str = "{header}\n\n{body}".format(header=header, body=timetable_str)
 
     if not update.callback_query:

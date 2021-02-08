@@ -203,6 +203,32 @@ class TestTimetableCommands:
                 assert r.text == "<b>Понеділок</b> (01.02)\n\n{}".format(expected_timetable)
 
     @mark.asyncio
+    async def test_empty_day(self, db_session, client: TelegramClient, use_bot):
+        group = StudentsGroupFactory()
+        user = UserFactory(tg_id=(await client.get_me()).id, students_group=group)
+        db_session.commit()
+
+        today = dt.date(2021, 2, 1)
+        yesterday = today - dt.timedelta(days=1)
+        tomorrow = today + dt.timedelta(days=1)
+
+        with mock.patch("assistant.bot.commands.timetable.dt") as dt_mock:
+            dt_mock.date.today = mock.MagicMock(return_value=today)
+            dt_mock.datetime = dt.datetime
+            dt_mock.timedelta = dt.timedelta
+
+            async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
+                await conv.send_message("/day")
+                r: Message
+
+                r = await conv.get_response()
+                kb = flatten_keyboard(r.buttons)
+                assert r.text == "<b>Понеділок</b> (01.02)\n\nЗаняття відсутні"
+                assert kb[0].text == "< {}".format(yesterday.strftime("%d.%m.%Y"))
+                assert kb[1].text == "Сьогодні".format(today.strftime("%d.%m.%Y"))
+                assert kb[2].text == "{} >".format(tomorrow.strftime("%d.%m.%Y"))
+
+    @mark.asyncio
     async def test_week(self, db_session, client: TelegramClient, use_bot):
         group = StudentsGroupFactory()
         user = UserFactory(tg_id=(await client.get_me()).id, students_group=group)
@@ -260,6 +286,32 @@ class TestTimetableCommands:
                 kb = flatten_keyboard(r.buttons)
                 expected_timetable = build_timetable_week(db_session, user, current_monday)
                 assert r.text == expected_timetable
+
+    @mark.asyncio
+    async def test_empty_week(self, db_session, client: TelegramClient, use_bot):
+        group = StudentsGroupFactory()
+        user = UserFactory(tg_id=(await client.get_me()).id, students_group=group)
+        db_session.commit()
+
+        current_monday = dt.date(2021, 2, 1)
+        prev_monday = current_monday - dt.timedelta(days=7)
+        next_monday = current_monday + dt.timedelta(days=7)
+
+        with mock.patch("assistant.bot.commands.timetable.dt") as dt_mock:
+            dt_mock.date.today = mock.MagicMock(return_value=current_monday)
+            dt_mock.datetime = dt.datetime
+            dt_mock.timedelta = dt.timedelta
+
+            async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
+                await conv.send_message("/week")
+                r: Message
+
+                r = await conv.get_response()
+                kb = flatten_keyboard(r.buttons)
+                assert r.text == "На цьому тижні немає занять"
+                assert kb[0].text == "< {}".format(prev_monday.strftime("%d.%m.%Y"))
+                assert kb[1].text == "Сьогодні".format(current_monday.strftime("%d.%m.%Y"))
+                assert kb[2].text == "{} >".format(next_monday.strftime("%d.%m.%Y"))
 
 
 class TestLinkRequest:
