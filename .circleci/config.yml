@@ -12,6 +12,8 @@ jobs:
           TELEGRAM_APP_ID: $TELEGRAM_APP_ID
           TELETGRAM_APP_HASH: $TELEGRAM_APP_HASH
           TELETHON_SESSION: $TELETHON_SESSION
+          BOT_NAME: $BOT_NAME
+          BOT_TOKEN: $BOT_TOKEN
           BOT_WORKERS: 1
           DB_HOST: localhost
           DB_PORT: 5432
