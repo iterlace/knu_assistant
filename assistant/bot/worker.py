@@ -10,7 +10,6 @@ from telegram.ext import (
     ConversationHandler,
 )
 
-import bot.commands.utils
 from assistant import config
 from assistant.bot import commands
 from assistant.bot.dictionaries import states

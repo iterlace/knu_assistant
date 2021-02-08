@@ -28,6 +28,10 @@ jobs:
           POSTGRES_PASSWORD: 0
     steps:
       - checkout
+#      - restore_cache:
+#          keys:
+#            - m2-{{ checksum "pom.xml" }}
+#            - m2- # used if checksum fails
       - run: |
           sudo apt update
           sudo apt install -y postgresql-client
