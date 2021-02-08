@@ -60,8 +60,16 @@ v{}
 @acquire_user
 def start(update: Update, ctx: CallbackContext, session: Session, user: User):
     if user.students_group_id is None:
-        bot.send_message(update.effective_user.id, HELLO_MESSAGE)
-        bot.send_message(update.effective_user.id, "Давай розпочнемо.")
+        bot.send_message(
+            update.effective_user.id,
+            text=HELLO_MESSAGE,
+            parse_mode=ParseMode.HTML,
+        )
+        bot.send_message(
+            update.effective_user.id,
+            "Давай розпочнемо.",
+            parse_mode=ParseMode.HTML,
+        )
         return change_group(update=update, ctx=ctx, session=session, user=user)
     else:
         responses = ["Що як?", "Як тебе досі не відрахували?", "/start",
