@@ -30,8 +30,8 @@ jobs:
       - checkout
 #      - restore_cache:
 #          keys:
-#            - m2-{{ checksum "pom.xml" }}
-#            - m2- # used if checksum fails
+#            - requirement-{{ checksum "setup.py" }}
+#            - requirement- # used if checksum fails
       - run: |
           sudo apt update
           sudo apt install -y postgresql-client
