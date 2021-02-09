@@ -310,7 +310,7 @@ def set_lesson_link(update: Update, ctx: CallbackContext, session: Session, user
             message += "\nзамість\n{}".format(lesson.link)
 
         request = Request(
-            initiator_id=user.tg_id,
+            initiator=user,
             message=message,
             meta={
                 "lesson_id": lesson.id,

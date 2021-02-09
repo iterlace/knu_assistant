@@ -19,7 +19,7 @@ from assistant.bot.commands.timetable import (
     build_timetable_week,
 )
 
-from assistant.database import Session
+from assistant.database import Session, Request
 from assistant.bot.dictionaries import states
 
 from assistant.tests.factories import (
@@ -375,19 +375,54 @@ class TestLinkRequest:
         missing_moderator = update.message.reply_text.call_args_list[0]
         assert "Ваша група наразі не має модератора!" in missing_moderator.kwargs["text"]
 
-    # TODO
-    # def test_set_lesson_link_init(self, db_session, mocker):
-    #     """ Test `set_lesson_link` as it was called from `link` """
-    #
-    #     group = StudentsGroupFactory()
-    #     user = UserFactory(students_group=group)
-    #     lesson = LessonFactory(students_group=group)
-    #     db_session.commit()
-    #
-    #     update = mock.MagicMock()
-    #     ctx = mock.MagicMock()
-    #     ctx.user_data = {"lesson_id": lesson.id, "init": True}
-    #     set_lesson_link = mocker.patch("assistant.bot.commands.timetable.set_lesson_link",
-    #                                    side_effect=assistant.bot.commands.timetable.set_lesson_link)
-    #
-    #     set_lesson_link(update=update, ctx=ctx, session=db_session, user=user)
+    def test_set_lesson_link_init(self, db_session, mocker):
+        """ Test `set_lesson_link` as it was called from `link` """
+
+        group = StudentsGroupFactory()
+        user = UserFactory(students_group=group)
+        lesson = LessonFactory(students_group=group)
+        db_session.commit()
+
+        update = mock.MagicMock()
+        ctx = mock.MagicMock()
+        ctx.user_data = {"lesson_id": lesson.id, "init": True}
+        set_lesson_link = mocker.patch("assistant.bot.commands.timetable.set_lesson_link",
+                                       side_effect=assistant.bot.commands.timetable.set_lesson_link)
+
+        output = set_lesson_link(update=update, ctx=ctx, session=db_session, user=user)
+        assert update.message.reply_text.call_count == 1
+        assert output == states.LinkWait
+
+        link_input = update.message.reply_text.call_args_list[0]
+        assert link_input.kwargs["text"] == "Введіть посилання:"
+
+    def test_set_lesson_link_request(self, db_session, mocker):
+        """ Test `set_lesson_link` as it was called from `link` """
+
+        group = StudentsGroupFactory()
+        user = UserFactory(students_group=group)
+        lesson = LessonFactory(students_group=group)
+        db_session.commit()
+
+        update = mock.MagicMock()
+        ctx = mock.MagicMock()
+        ctx.user_data = {"lesson_id": lesson.id, "init": False}
+        update.message.text = link = "https://zoom.com"
+        set_lesson_link = mocker.patch("assistant.bot.commands.timetable.set_lesson_link",
+                                       side_effect=assistant.bot.commands.timetable.set_lesson_link)
+        send_request = mocker.patch("assistant.bot.commands.timetable.send_request")
+
+        output = set_lesson_link(update=update, ctx=ctx, session=db_session, user=user)
+
+        assert output == states.END
+        assert send_request.call_count == 1
+
+        request = send_request.call_args_list[0].kwargs["request"]
+
+        assert request.initiator == user
+        assert request.message == "@{username} хоче встановити нове посилання для <b>{lesson}</b>:\n{link}"\
+            .format(username=user.tg_username, lesson=str(lesson), link=link)
+        assert request.meta == {"lesson_id": lesson.id, "link": link}
+        assert request.students_group == user.students_group
+
+    # TODO test end button
