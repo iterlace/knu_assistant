@@ -81,6 +81,11 @@ class StudentsGroup(Base):
         ForeignKey("faculties.id"),
         nullable=False,
     )
+    # Associated telegram channel id
+    tg_channel = Column(
+        Integer,
+        nullable=True,
+    )
 
     students = relationship("User", order_by=User.tg_id, back_populates="students_group")
     lessons = relationship("Lesson", back_populates="students_group")

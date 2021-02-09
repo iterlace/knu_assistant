@@ -91,6 +91,16 @@ def run():
     dp.add_handler(CallbackQueryHandler(commands.reject_link_request,
                                         pattern=states.ModeratorRejectLink.parse_pattern))
 
+    # /channel
+    dp.add_handler(CommandHandler("channel", commands.channel))
+
+    # /set_channel
+    # TODO: channel invitation handler
+    # CommandHandler(MessageHandler())
+
+    # /broadcast
+    dp.add_handler(MessageHandler(Filters.text & Filters.regex(r"^/broadcast(.*?)$"), commands.broadcast))
+
     updater.start_polling()
 
     try:

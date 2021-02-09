@@ -159,3 +159,34 @@ def reject_link_request(update: Update, ctx: CallbackContext, session: Session, 
         text=f"{e_cancel} Ваш запит #{request.id} було відхилено!",
         parse_mode=ParseMode.HTML,
     )
+
+
+@db_session
+@acquire_user
+@moderators_only
+def channel(update: Update, ctx: CallbackContext, session: Session, user: User):
+    pass
+
+
+@db_session
+@acquire_user
+@moderators_only
+def set_channel(update: Update, ctx: CallbackContext, session: Session, user: User):
+    pass
+
+
+@db_session
+@acquire_user
+@moderators_only
+def broadcast(update: Update, ctx: CallbackContext, session: Session, user: User):
+    group = user.students_group
+    if group.tg_channel is None:
+        update.message.reply_text(
+            text="Спочатку необхідно зареєструвати канал: /set_channel",
+        )
+        return
+
+
+
+
+
