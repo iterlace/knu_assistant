@@ -50,6 +50,11 @@ class User(Base):
         nullable=False,
         default=False,
     )
+    last_active = Column(
+        DateTime,
+        nullable=False,
+        default=dt.datetime.now,
+    )
 
     students_group = relationship("StudentsGroup", back_populates="students")
     subgroups = relationship("Lesson",

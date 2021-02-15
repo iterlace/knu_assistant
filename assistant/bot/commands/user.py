@@ -156,15 +156,15 @@ def select_subgroups(update: Update, ctx: CallbackContext, session: Session, use
     filters = []
     for lesson in ctx.user_data["subgroups"]:
         filters.append(~(
-            (Lesson.name==lesson.name) &
-            (Lesson.lesson_format==lesson.lesson_format)
+            (Lesson.name == lesson.name) &
+            (Lesson.lesson_format == lesson.lesson_format)
         ))
     # remaining lessons
     lessons = (
         session
         .query(Lesson.name, Lesson.lesson_format)
         .filter(
-            Lesson.students_group_id==ctx.user_data["group_id"],
+            Lesson.students_group_id == ctx.user_data["group_id"],
             *filters,
         )
         .order_by(Lesson.name)

@@ -25,6 +25,7 @@ setup(
         "urllib3==1.26.2",
         "psycopg2==2.8.6",
         "sentry-sdk==0.19.5",
+        "celery[sqlalchemy]==5.0.5",
     ],
     setup_requires=[
         "pytest-runner",

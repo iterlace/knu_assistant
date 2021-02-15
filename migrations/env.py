@@ -32,6 +32,23 @@ target_metadata = Base.metadata
 config.set_main_option('sqlalchemy.url', assistant.config.DB_STRING)
 
 
+def exclude_tables_from_config(config_):
+    tables_ = config_.get("tables", None)
+    if tables_ is not None:
+        tables = tables_.split(",")
+    return tables
+
+
+exclude_tables = exclude_tables_from_config(config.get_section("alembic:exclude"))
+
+
+def include_object(object, name, type_, reflected, compare_to):
+    if type_ == "table" and name in exclude_tables:
+        return False
+    else:
+        return True
+
+
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
 
@@ -50,6 +67,7 @@ def run_migrations_offline():
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -71,7 +89,9 @@ def run_migrations_online():
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            include_object=include_object,
         )
 
         with context.begin_transaction():

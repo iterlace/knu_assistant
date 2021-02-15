@@ -1,5 +1,6 @@
 from functools import wraps
 import logging
+import datetime as dt
 
 from telegram import Update
 from sqlalchemy.orm import Session as SqaSession
@@ -56,6 +57,9 @@ def acquire_user(func):
         if user.tg_username != update.effective_user.username:
             user.tg_username = update.effective_user.username
             session.commit()
+
+        user.last_active = dt.datetime.now()
+        session.commit()
 
         kwargs.update({
             "user": user,

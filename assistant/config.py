@@ -1,4 +1,6 @@
 from logging.config import dictConfig
+import os
+import time
 
 import sentry_sdk
 from telegram import Bot
@@ -72,6 +74,11 @@ dictConfig({
         "handlers": ["default"],
     },
 })
+
+
+os.environ["TZ"] = "Europe/Kiev"
+time.tzset()
+
 
 try:
     SENTRY_DSN = env.str("SENTRY_DSN")
