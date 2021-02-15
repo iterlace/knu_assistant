@@ -9,7 +9,7 @@ app.conf.enable_utc = True
 app.conf.beat_schedule = {
     "tomorrow-timetable": {
         "task": "assistant.tasks.scheduled.tomorrow_timetable",
-        "schedule": crontab(hour=22, minute=50),
+        "schedule": crontab(hour=21, minute=00),
         "args": [],
     }
 }
