@@ -7,7 +7,7 @@ app = Celery("knu_assistant", broker="sqla+{}".format(config.DB_STRING))
 app.conf.beat_schedule = {
     "tomorrow-timetable": {
         "task": "assistant.tasks.scheduled.tomorrow_timetable",
-        "schedule": crontab(hour=10, minute=30),
+        "schedule": crontab(hour=22, minute=30),
         "args": [],
     }
 }
