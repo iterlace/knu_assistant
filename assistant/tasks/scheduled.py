@@ -40,6 +40,7 @@ def tomorrow_timetable():
                 chat_id=user.tg_id,
                 text=message,
                 parse_mode=ParseMode.HTML,
+                disable_web_page_preview=True,
             )
         except telegram.error.TelegramError as e:
             continue
