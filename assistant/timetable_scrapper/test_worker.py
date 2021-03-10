@@ -57,58 +57,54 @@ class TestTimetableScrapper:
         [
             # Simple single-page case
             (
-                    [("0", FakeResponse(status_code=200, body={"next": None, "results": []}))],
-                    {"next": None, "results": []}
+                [("0", FakeResponse(status_code=200, body={"next": None, "results": []}))],
+                {"next": None, "results": []}
             ),
             # Multi-page different keys merge
             (
-                    [
-                        ("0", FakeResponse(status_code=200, body={"next": "1", "results": []})),
-                        (
-                                "1", FakeResponse(status_code=200,
-                                                  body={"next": None, "answers": [1, 2]})),
-                    ],
-                    {"next": "1", "results": [], "answers": [1, 2]}
+                [
+                    ("0", FakeResponse(status_code=200, body={"next": "1", "results": []})),
+                    ("1", FakeResponse(status_code=200, body={"next": None, "answers": [1, 2]})),
+                ],
+                {"next": "1", "results": [], "answers": [1, 2]}
             ),
             # Multi-page lists join
             (
-                    [
-                        ("0",
-                         FakeResponse(status_code=200, body={"next": "1", "results": [{"id": 1}]})),
-                        ("1", FakeResponse(status_code=200,
-                                           body={"next": None, "results": [{"id": 2}]})),
-                    ],
-                    {"next": "1", "results": [{"id": 1}, {"id": 2}]}
+                [
+                    ("0", FakeResponse(status_code=200,
+                                       body={"next": "1", "results": [{"id": 1}]})),
+                    ("1", FakeResponse(status_code=200,
+                                       body={"next": None, "results": [{"id": 2}]})),
+                ],
+                {"next": "1", "results": [{"id": 1}, {"id": 2}]}
             ),
             # Multi-page equivalent lists join
             (
-                    [
-                        ("0", FakeResponse(status_code=200,
-                                           body={"next": "1", "enum": [{"monday": 1}]})),
-                        ("1", FakeResponse(status_code=200,
-                                           body={"next": None, "enum": [{"monday": 1}]})),
-                    ],
-                    {"next": "1", "enum": [{"monday": 1}]}
+                [
+                    ("0", FakeResponse(status_code=200,
+                                       body={"next": "1", "enum": [{"monday": 1}]})),
+                    ("1", FakeResponse(status_code=200,
+                                       body={"next": None, "enum": [{"monday": 1}]})),
+                ],
+                {"next": "1", "enum": [{"monday": 1}]}
             ),
             # Multi-page dicts join
             (
-                    [
-                        ("0",
-                         FakeResponse(status_code=200, body={"next": "1", "keywords": {"o": 1}})),
-                        ("1",
-                         FakeResponse(status_code=200, body={"next": None, "keywords": {"t": 2}})),
-                    ],
-                    {"next": "1", "keywords": {"o": 1, "t": 2}}
+                [
+                    ("0", FakeResponse(status_code=200, body={"next": "1", "keywords": {"o": 1}})),
+                    ("1", FakeResponse(status_code=200, body={"next": None, "keywords": {"t": 2}})),
+                ],
+                {"next": "1", "keywords": {"o": 1, "t": 2}}
             ),
             # Multi-page equivalent dicts join
             (
-                    [
-                        ("0",
-                         FakeResponse(status_code=200, body={"next": "1", "enum": {"monday": 1}})),
-                        ("1",
-                         FakeResponse(status_code=200, body={"next": None, "enum": {"monday": 1}})),
-                    ],
-                    {"next": "1", "enum": {"monday": 1}}
+                [
+                    ("0", FakeResponse(status_code=200,
+                                       body={"next": "1", "enum": {"monday": 1}})),
+                    ("1", FakeResponse(status_code=200,
+                                       body={"next": None, "enum": {"monday": 1}})),
+                ],
+                {"next": "1", "enum": {"monday": 1}}
             ),
         ]
     )

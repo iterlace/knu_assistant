@@ -102,8 +102,7 @@ class TimetableScrapper:
                                 if match is not None:
                                     last_name, first_name, middle_name = match.groups()
                                 else:
-                                    last_name, first_name, middle_name = raw_teacher[
-                                                                             "full_name"], "", ""
+                                    last_name, first_name, middle_name = raw_teacher["full_name"], "", ""
                                 teacher = self.db.query(Teacher) \
                                     .filter_by(last_name=last_name, first_name=first_name,
                                                middle_name=middle_name) \
