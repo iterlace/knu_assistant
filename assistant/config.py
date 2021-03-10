@@ -1,12 +1,10 @@
-from logging.config import dictConfig
 import os
 import time
-import datetime as dt
+from logging.config import dictConfig
 
 import sentry_sdk
-from telegram import Bot
 from environs import Env
-
+from telegram import Bot
 
 env = Env()
 # Read .env into os.environ
@@ -37,7 +35,8 @@ dictConfig({
     "disable_existing_loggers": False,
     "formatters": {
         "standard": {
-            "format": "%(asctime)s - [%(levelname)s] %(name)s [%(module)s.%(funcName)s:%(lineno)d]: %(message)s",
+            "format": "%(asctime)s - [%(levelname)s] %(name)s [%(module)s.%(funcName)s:%("
+                      "lineno)d]: %(message)s",
             "datefmt": "%Y-%m-%d %H:%M:%S",
         }
     },
@@ -76,10 +75,8 @@ dictConfig({
     },
 })
 
-
 os.environ["TZ"] = "Europe/Kiev"
 time.tzset()
-
 
 try:
     SENTRY_DSN = env.str("SENTRY_DSN")

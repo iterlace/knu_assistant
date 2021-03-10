@@ -1,6 +1,6 @@
 import datetime as dt
-from typing import Any, Union
 import logging
+from typing import Union
 
 logger = logging.getLogger(__name__)
 

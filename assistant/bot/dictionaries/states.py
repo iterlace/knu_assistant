@@ -1,10 +1,37 @@
+"""
+Conversation states dictionary
+Consists of State object
+"""
+
 import re
-import enum
 
 from telegram.ext import ConversationHandler
 
 
 class State(str):
+    """
+    State object describes a ConversationHandler state.
+    Usage:
+    1. Object creation:
+    >>> FacultySelection = State("faculty_selection", "faculty_{}", re.compile(r"^faculty_(\d+)$"))
+    2. Usage in dispatcher:
+    >>> handler = ConversationHandler(
+    >>>     entry_points=[CommandHandler("/start", register)],
+    >>>     states={
+    >>>         FacultySelection: [
+    >>>             CallbackQueryHandler(select_faculty,
+    >>>                                  pattern=FacultySelection.parse_pattern)],
+    >>>     },
+    >>>     fallbacks=[],
+    >>> )
+    3. Usage in handlers:
+    >>> def register(update, ctx):
+    >>>     keyboard_buttons = [InlineKeyboardButton(text="CSC",
+    >>>                                              callback_data=FacultySelection.build(1))]
+    >>>     # ...
+    >>>     return FacultySelection
+    """
+
     parse_pattern = None
     build_pattern = None
 
@@ -27,7 +54,15 @@ class State(str):
         return obj
 
     def build(self, *args, **kwargs):
+        """
+        Formats build_pattern with passed arguments.
+        It must be a single entrypoint for building callback data.
+        """
         return self.build_pattern.format(*args, **kwargs)
+
+    def parse(self, string):
+        """ Matches given string to the patterns """
+        return self.parse_pattern.match(string)
 
 
 EmptyStep = State('')
@@ -47,22 +82,18 @@ UserSelectGroup = State("select_student_group",
                         "{}",
                         re.compile(r"^(\d+)$"))
 
-
 # User selects their subgroups
 UserSelectSubgroups = State("select_subgroups",
                             "{}",
                             re.compile(r"^(\w+)$"))
 
-
 TimetableWeekSelection = State("timetable_week_selection",
                                "tt_week_selection_{}",
                                re.compile(r"^tt_week_selection_(\d{4}-\d{2}-\d{2})$"))
 
-
 TimetableDaySelection = State("timetable_day_selection",
                               "tt_day_selection_{}",
                               re.compile(r"^tt_day_selection_(\d{4}-\d{2}-\d{2})$"))
-
 
 # ========= Moderation Requests =========
 
@@ -79,4 +110,3 @@ ModeratorRejectLink = State("moderator_reject_lesson_link",
                             re.compile(r"^moderator_reject_lesson_link_(\d+)$"))
 
 END = ConversationHandler.END
-

@@ -1,29 +1,23 @@
-import celery
+""" Crontab tasks """
+
 import datetime as dt
 
-from telegram import ParseMode
 import telegram.error
+from telegram import ParseMode
 
-from assistant.bot.commands.timetable import build_timetable_day, build_timetable_week
-from assistant.bot.dictionaries.days_of_week import *
-from assistant import config
+from assistant.bot.commands.timetable import build_timetable_day
+from assistant.bot.dictionaries import week
 from assistant.config import bot
 from assistant.database import (
     Session,
     User,
-    StudentsGroup,
-    Lesson,
-    SingleLesson,
-    Teacher,
-    LessonSubgroupMember,
-    Request,
 )
-from assistant.tasks import celery as tasks_config
-from assistant.tasks.celery import app
+from assistant.tasks.config import app
 
 
 @app.task
 def tomorrow_timetable():
+    """ Sends each user their timetable for the next day, if present """
     session = Session()
     users = session.query(User).all()
     tomorrow = dt.datetime.today().date() + dt.timedelta(days=1)
@@ -32,7 +26,7 @@ def tomorrow_timetable():
         if not timetable:
             continue
         message = "Твій розклад на завтра ({day}):\n\n{timetable}\n\n".format(
-            day=DAYS_OF_WEEK[tomorrow.weekday()].name,
+            day=week.LIST[tomorrow.weekday()].name,
             timetable=timetable,
         )
         try:

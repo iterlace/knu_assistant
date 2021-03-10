@@ -1,22 +1,9 @@
-import datetime as dt
 import mock
-from pytest import mark
-
-from telethon import TelegramClient
-from telethon.tl.custom.message import Message
 from sqlalchemy.orm import sessionmaker
 
-from assistant import config
-from assistant.database import User
 from assistant.database import Session
-
 from assistant.tests.factories import (
-    FacultyFactory,
-    LessonFactory,
-    TeacherFactory,
-    SingleLessonFactory,
     UserFactory,
-    StudentsGroupFactory,
 )
 
 
@@ -149,5 +136,3 @@ class TestAdminsOnly:
             return 1
 
         assert handler(user=user_) is None
-
-

@@ -1,5 +1,8 @@
 import logging
 
+import sqlalchemy as sqa
+from sqlalchemy import func
+from sqlalchemy.orm import Session
 from telegram import (
     Update,
     InlineKeyboardButton,
@@ -9,17 +12,14 @@ from telegram import (
 from telegram.ext import (
     CallbackContext,
 )
-import sqlalchemy as sqa
-from sqlalchemy import func
-from sqlalchemy.orm import Session
 
-from assistant.config import bot
-from assistant.database import User, StudentsGroup, Faculty, Lesson, LessonTeacher, LessonSubgroupMember
+from assistant.bot.commands.utils import end
 from assistant.bot.decorators import acquire_user, db_session
 from assistant.bot.dictionaries import states
 from assistant.bot.dictionaries.phrases import *
 from assistant.bot.keyboards import build_keyboard_menu
-from assistant.bot.commands.utils import end
+from assistant.config import bot
+from assistant.database import User, StudentsGroup, Faculty, Lesson
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +32,14 @@ def change_group(update: Update, ctx: CallbackContext, session: Session, user: U
     if user.is_group_moderator:
         bot.send_message(
             update.effective_user.id,
-            "<b>Увага!</b>\nПереходячи до іншої групи, ви назавжди втратите роль модератора в даній!",
+            "<b>Увага!</b>\nПереходячи до іншої групи, ви назавжди втратите роль модератора в "
+            "даній!",
             parse_mode=ParseMode.HTML,
         )
 
     kb_buttons = []
-    for course in session.query(StudentsGroup.course).distinct(StudentsGroup.course).order_by(StudentsGroup.course):
+    for course in session.query(StudentsGroup.course).distinct(StudentsGroup.course).order_by(
+            StudentsGroup.course):
         kb_buttons.append(InlineKeyboardButton(
             text=course[0],
             callback_data=course[0],
@@ -45,7 +47,7 @@ def change_group(update: Update, ctx: CallbackContext, session: Session, user: U
 
     kb_footer = None
     if user.students_group_id is not None:
-        kb_footer = [InlineKeyboardButton(text=p_cancel, callback_data=states.END)]
+        kb_footer = [InlineKeyboardButton(text=P_CANCEL, callback_data=states.END)]
 
     keyboard = build_keyboard_menu(kb_buttons, 4, footer_buttons=kb_footer)
     bot.send_message(update.effective_user.id, "На якому курсі ти навчаєшся?",
@@ -56,7 +58,8 @@ def change_group(update: Update, ctx: CallbackContext, session: Session, user: U
 @db_session
 @acquire_user
 def select_course(update: Update, ctx: CallbackContext, session: Session, user: User):
-    is_valid = session.query(sqa.exists().where(StudentsGroup.course == update.callback_query.data)).scalar()
+    is_valid = session.query(
+        sqa.exists().where(StudentsGroup.course == update.callback_query.data)).scalar()
     if not is_valid:
         return  # TODO: handle error
     ctx.user_data["course"] = update.callback_query.data
@@ -71,7 +74,7 @@ def select_course(update: Update, ctx: CallbackContext, session: Session, user: 
 
     kb_footer = None
     if user.students_group_id is not None:
-        kb_footer = [InlineKeyboardButton(text=p_cancel, callback_data=states.END)]
+        kb_footer = [InlineKeyboardButton(text=P_CANCEL, callback_data=states.END)]
 
     keyboard = build_keyboard_menu(kb_buttons, 4, footer_buttons=kb_footer)
     update.callback_query.answer()
@@ -102,7 +105,7 @@ def select_faculty(update: Update, ctx: CallbackContext, session: Session, user:
 
     kb_footer = None
     if user.students_group_id is not None:
-        kb_footer = [InlineKeyboardButton(text=p_cancel, callback_data=states.END)]
+        kb_footer = [InlineKeyboardButton(text=P_CANCEL, callback_data=states.END)]
 
     update.callback_query.answer()
     keyboard = build_keyboard_menu(kb_buttons, 4, footer_buttons=kb_footer)
@@ -116,9 +119,10 @@ def select_faculty(update: Update, ctx: CallbackContext, session: Session, user:
 @db_session
 @acquire_user
 def select_group(update: Update, ctx: CallbackContext, session: Session, user: User):
-    is_valid = session.query(sqa.exists().where(StudentsGroup.id == update.callback_query.data)).scalar()
+    is_valid = session.query(
+        sqa.exists().where(StudentsGroup.id == update.callback_query.data)).scalar()
     if not is_valid:
-        return  # TODO: handle error
+        return None  # TODO: handle error
     ctx.user_data["group_id"] = update.callback_query.data
 
     update.callback_query.answer()
@@ -148,7 +152,7 @@ def select_subgroups(update: Update, ctx: CallbackContext, session: Session, use
             Lesson.lesson_format == lesson_format,
         ).first()
         if not lesson:
-            return  # TODO: handle error
+            return None  # TODO: handle error
         ctx.user_data["subgroups"].append(lesson)
         update.callback_query.answer()
 
@@ -156,13 +160,12 @@ def select_subgroups(update: Update, ctx: CallbackContext, session: Session, use
     filters = []
     for lesson in ctx.user_data["subgroups"]:
         filters.append(~(
-            (Lesson.name == lesson.name) &
-            (Lesson.lesson_format == lesson.lesson_format)
+                (Lesson.name == lesson.name) &
+                (Lesson.lesson_format == lesson.lesson_format)
         ))
     # remaining lessons
     lessons = (
-        session
-        .query(Lesson.name, Lesson.lesson_format)
+        session.query(Lesson.name, Lesson.lesson_format)
         .filter(
             Lesson.students_group_id == ctx.user_data["group_id"],
             *filters,
@@ -193,7 +196,7 @@ def select_subgroups(update: Update, ctx: CallbackContext, session: Session, use
             ))
         kb_footer = None
         if user.students_group_id is not None:
-            kb_footer = [InlineKeyboardButton(text=p_cancel, callback_data=states.END)]
+            kb_footer = [InlineKeyboardButton(text=P_CANCEL, callback_data=states.END)]
         keyboard = build_keyboard_menu(kb_buttons, n_cols=2, footer_buttons=kb_footer)
 
         if update.callback_query is not None:
@@ -209,24 +212,23 @@ def select_subgroups(update: Update, ctx: CallbackContext, session: Session, use
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
         return states.UserSelectSubgroups
-    else:
-        # if all subgroups were selected - push all changes to the database
 
-        # attach the group to the user
-        group = session.query(StudentsGroup).get(ctx.user_data["group_id"])
-        user.students_group = group
+    # if all subgroups were selected - push all changes to the database
 
-        user.is_group_moderator = False
+    # attach the group to the user
+    group = session.query(StudentsGroup).get(ctx.user_data["group_id"])
+    user.students_group = group
 
-        user.subgroups.clear()
-        for lesson in ctx.user_data["subgroups"]:
-            lesson = session.merge(lesson)
-            user.subgroups.append(lesson)
-        session.commit()
-        if update.callback_query is not None and len(user.subgroups) > 0:
-            update.callback_query.edit_message_text(
-                text="Підгрупи визначено!",
-                reply_markup=None
-            )
-        return end(update=update, ctx=ctx)
+    user.is_group_moderator = False
 
+    user.subgroups.clear()
+    for lesson in ctx.user_data["subgroups"]:
+        lesson = session.merge(lesson)
+        user.subgroups.append(lesson)
+    session.commit()
+    if update.callback_query is not None and len(user.subgroups) > 0:
+        update.callback_query.edit_message_text(
+            text="Підгрупи визначено!",
+            reply_markup=None
+        )
+    return end(update=update, ctx=ctx)

@@ -1,16 +1,23 @@
+"""
+3rd-party timetable scrapper
+Includes an entrypoint to run the program
+
+Usage:
+$ python assistant/timetable_scrapper/worker.py
+"""
+
+import datetime as dt
 import json
 import logging
-import requests
-from typing import Optional, Any, Union, Tuple, List, Dict
-import urllib.parse
-import datetime as dt
 import re
+import urllib.parse
+from typing import Optional, Any, Dict
 
-from psycopg2 import errors
+import requests
 from sqlalchemy.orm.session import Session as SqaSession
 
 from assistant.database import Session
-from assistant.database import User, StudentsGroup, Faculty, Lesson, SingleLesson, Teacher
+from assistant.database import StudentsGroup, Faculty, Lesson, SingleLesson, Teacher
 
 logger = logging.getLogger(__name__)
 full_name_mask = re.compile(r"^\s*?([а-яїєі']+)\s*?([а-яїєі']+)\.?\s*?([а-яїєі']+)\.?\s*?$", re.I)
@@ -37,13 +44,14 @@ class TimetableScrapper:
                 if not raw_group["name"].startswith("К-"):
                     continue
 
-                raw_timetable = self.get("https://api.mytimetable.live/rest/timetable/", {"group": raw_group["slug"]})
+                raw_timetable = self.get("https://api.mytimetable.live/rest/timetable/",
+                                         {"group": raw_group["slug"]})
                 if raw_timetable is None or "lessons" not in raw_timetable.keys():
                     continue
 
                 # Get/Create a faculty
                 raw_faculty = raw_timetable["lessons"][0]["faculty"]
-                faculty = self.db.query(Faculty).filter(Faculty.name==raw_faculty["name"]).first()
+                faculty = self.db.query(Faculty).filter(Faculty.name == raw_faculty["name"]).first()
                 if faculty is None:
                     faculty = Faculty(
                         name=raw_faculty["name"],
@@ -94,9 +102,11 @@ class TimetableScrapper:
                                 if match is not None:
                                     last_name, first_name, middle_name = match.groups()
                                 else:
-                                    last_name, first_name, middle_name = raw_teacher["full_name"], "", ""
-                                teacher = self.db.query(Teacher)\
-                                    .filter_by(last_name=last_name, first_name=first_name, middle_name=middle_name)\
+                                    last_name, first_name, middle_name = raw_teacher[
+                                                                             "full_name"], "", ""
+                                teacher = self.db.query(Teacher) \
+                                    .filter_by(last_name=last_name, first_name=first_name,
+                                               middle_name=middle_name) \
                                     .first()
                                 if teacher is None:
                                     teacher = Teacher(
@@ -129,11 +139,12 @@ class TimetableScrapper:
                         #         and starts_at == dt.time(12, 20) \
                         #         and ends_at == dt.time(13, 55) \
                         #         and l.name == "Чисельний аналіз":
-                        #     logger.info("{} {} ({})".format(single_lesson.lesson, single_lesson, raw_lesson))
+                        #     logger.info("{} {} ({})".format(single_lesson.lesson,
+                        #     single_lesson, raw_lesson))
                         self.db.add(single_lesson)
                         self.db.flush()
             except Exception as e:
-                logger.error("got error while parsing {}: {}".format(raw_group.get("name", None), str(e)))
+                logger.error("got error while parsing %s: %s", raw_group.get("name", None), str(e))
                 continue
             else:
                 continue
@@ -149,7 +160,8 @@ class TimetableScrapper:
 
         response = self.session.get(url)
         if response.status_code < 200 or response.status_code >= 300:
-            # logger.error("got error fetching {} ({}): {}".format(url, response.status_code, response.content))
+            # logger.error("got error fetching {} ({}): {}".format(url, response.status_code,
+            # response.content))
             return None
         try:
             body: Dict = response.json()
@@ -172,7 +184,7 @@ class TimetableScrapper:
                             body[k] = v
             return body
         except (ValueError, json.JSONDecodeError) as e:
-            logger.error("got error parsing json {}: {}".format(url, str(e)))
+            logger.error("got error parsing json %s: %s", url, str(e))
             return None
 
 
@@ -180,4 +192,3 @@ if __name__ == '__main__':
     # TODO: argparse
     scrapper = TimetableScrapper()
     scrapper.run()
-

@@ -1,41 +1,34 @@
 import datetime as dt
 import logging
-import re
 import random
+import re
 
 import telegram as tg
+from sqlalchemy.orm import Session
 from telegram import (
     Update,
-    KeyboardButton,
-    ReplyKeyboardMarkup,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     ParseMode,
 )
 from telegram.ext import (
-    ConversationHandler,
     CallbackContext,
 )
-from sqlalchemy.orm import Session
 
-from assistant.config import bot
+from assistant.bot.commands.moderation import send_request
+from assistant.bot.commands.utils import end
+from assistant.bot.decorators import acquire_user, db_session
+from assistant.bot.dictionaries import states, week
+from assistant.bot.dictionaries.phrases import *
+from assistant.bot.keyboards import build_keyboard_menu
 from assistant.database import (
     User,
-    StudentsGroup,
     Lesson,
     SingleLesson,
-    Teacher,
     LessonSubgroupMember,
     Request,
 )
-from assistant.bot.decorators import acquire_user, db_session, moderators_only, admins_only
-from assistant.bot.dictionaries import states, days_of_week
-from assistant.bot.dictionaries import timetable
-from assistant.bot.keyboards import build_keyboard_menu
-from assistant.bot.dictionaries.phrases import *
 from assistant.utils import get_monday
-from assistant.bot.commands.moderation import send_request
-from assistant.bot.commands.utils import end
 
 logger = logging.getLogger(__name__)
 __all__ = ["show_week_timetable", "show_day_timetable", "link", "set_lesson_link"]
@@ -45,22 +38,23 @@ ENDING_SPACES_MASK = re.compile(r"^(.*)(?<!\s)(\s+)$", flags=re.S)
 
 def build_timetable_lesson(session: Session, user: User, lesson: SingleLesson):
     teachers_names = [t.short_name for t in lesson.lesson.teachers]
-    teachers_formatted = "{emoji} {teachers}".format(emoji=e_teacher,
-                                                     teachers=f"{e_teacher} ".join(teachers_names))
+    teachers_formatted = "{emoji} {teachers}".format(emoji=E_TEACHER,
+                                                     teachers=f"{E_TEACHER} ".join(teachers_names))
     result_str = """\
 {starts_at} - {ends_at}
 {e_books} <b>{name}</b> ({format})
 {teachers}\n\
 """.format(
-        e_clock=e_clock, starts_at=lesson.starts_at.strftime("%H:%M"), ends_at=lesson.ends_at.strftime("%H:%M"),
-        e_books=e_books, name=lesson.lesson.name, format=lesson.lesson.represent_lesson_format(),
+        e_clock=E_CLOCK, starts_at=lesson.starts_at.strftime("%H:%M"),
+        ends_at=lesson.ends_at.strftime("%H:%M"),
+        e_books=E_BOOKS, name=lesson.lesson.name, format=lesson.lesson.represent_lesson_format(),
         teachers=teachers_formatted
     )
     if lesson.lesson.link:
-        result_str += "<a href=\"{}\"><u><i>Посилання на урок</i></u></a>. Змінити: /link@{}\n"\
+        result_str += "<a href=\"{}\"><u><i>Посилання на урок</i></u></a>. Змінити: /link@{}\n" \
             .format(lesson.lesson.link, lesson.lesson_id)
     else:
-        result_str += "Встановити посилання: /link@{}\n"\
+        result_str += "Встановити посилання: /link@{}\n" \
             .format(lesson.lesson_id)
 
     # if lesson.comment:
@@ -73,8 +67,7 @@ def build_timetable_lesson(session: Session, user: User, lesson: SingleLesson):
 
 def build_timetable_day(session: Session, user: User, date: dt.date):
     lessons = (
-        session
-        .query(SingleLesson)
+        session.query(SingleLesson)
         # join user's subgroups
         .outerjoin(
             LessonSubgroupMember,
@@ -107,7 +100,7 @@ def build_timetable_week(session: Session, user: User, monday: dt.date):
         lesson_details = build_timetable_day(session, user, date)
         if lesson_details:
             result_str += "[ <b>{day}</b> ]\n{lesson_details}\n\n".format(
-                day=days_of_week.DAYS_OF_WEEK[date.weekday()].name,
+                day=week.LIST[date.weekday()].name,
                 lesson_details=lesson_details,
             )
     result_str = ENDING_SPACES_MASK.sub(r"\1", result_str)  # remove \n in the ending
@@ -120,11 +113,10 @@ def show_week_timetable(update: Update, ctx: CallbackContext, session: Session, 
     if not update.callback_query:
         requested_date = dt.date.today()
     else:
-        requested_date = states.TimetableWeekSelection.parse_pattern.match(update.callback_query.data)
+        requested_date = states.TimetableWeekSelection.parse(update.callback_query.data)
         if requested_date is None:
             return None
-        else:
-            requested_date = requested_date.group(1)
+        requested_date = requested_date.group(1)
         requested_date = dt.datetime.strptime(requested_date, "%Y-%m-%d").date()
 
     requested_monday = get_monday(requested_date)
@@ -134,15 +126,18 @@ def show_week_timetable(update: Update, ctx: CallbackContext, session: Session, 
     kb_buttons = [
         InlineKeyboardButton(
             text="< {}".format(previous_monday.strftime("%d.%m.%Y")),
-            callback_data=states.TimetableWeekSelection.build_pattern.format(previous_monday.isoformat()),
+            callback_data=states.TimetableWeekSelection.build(
+                previous_monday.isoformat()),
         ),
         InlineKeyboardButton(
             text="Сьогодні",
-            callback_data=states.TimetableWeekSelection.build_pattern.format(dt.date.today().isoformat()),
+            callback_data=states.TimetableWeekSelection.build(
+                dt.date.today().isoformat()),
         ),
         InlineKeyboardButton(
             text="{} >".format(next_monday.strftime("%d.%m.%Y")),
-            callback_data=states.TimetableWeekSelection.build_pattern.format(next_monday.isoformat()),
+            callback_data=states.TimetableWeekSelection.build(
+                next_monday.isoformat()),
         ),
     ]
     keyboard = build_keyboard_menu(kb_buttons, 3)
@@ -180,11 +175,10 @@ def show_day_timetable(update: Update, ctx: CallbackContext, session: Session, u
     if not update.callback_query:
         requested_date = dt.date.today()
     else:
-        requested_date = states.TimetableDaySelection.parse_pattern.match(update.callback_query.data)
+        requested_date = states.TimetableDaySelection.parse(update.callback_query.data)
         if requested_date is None:
             return None
-        else:
-            requested_date = requested_date.group(1)
+        requested_date = requested_date.group(1)
         requested_date = dt.datetime.strptime(requested_date, "%Y-%m-%d").date()
 
     yesterday = requested_date - dt.timedelta(days=1)
@@ -193,20 +187,21 @@ def show_day_timetable(update: Update, ctx: CallbackContext, session: Session, u
     kb_buttons = [
         InlineKeyboardButton(
             text="< {}".format(yesterday.strftime("%d.%m.%Y")),
-            callback_data=states.TimetableDaySelection.build_pattern.format(yesterday.isoformat()),
+            callback_data=states.TimetableDaySelection.build(yesterday.isoformat()),
         ),
         InlineKeyboardButton(
             text="Сьогодні",
-            callback_data=states.TimetableDaySelection.build_pattern.format(dt.date.today().isoformat()),
+            callback_data=states.TimetableDaySelection.build(
+                dt.date.today().isoformat()),
         ),
         InlineKeyboardButton(
             text="{} >".format(tomorrow.strftime("%d.%m.%Y")),
-            callback_data=states.TimetableDaySelection.build_pattern.format(tomorrow.isoformat()),
+            callback_data=states.TimetableDaySelection.build(tomorrow.isoformat()),
         ),
     ]
     keyboard = build_keyboard_menu(kb_buttons, 3)
 
-    header = "<b>{day_name}</b> ({date})".format(day_name=days_of_week.DAYS_OF_WEEK[requested_date.weekday()].name,
+    header = "<b>{day_name}</b> ({date})".format(day_name=week.LIST[requested_date.weekday()].name,
                                                  date=requested_date.strftime("%d.%m"))
     timetable_str = build_timetable_day(session, user, requested_date)
     if timetable_str.strip() == "":
@@ -241,8 +236,7 @@ def show_day_timetable(update: Update, ctx: CallbackContext, session: Session, u
 def link(update: Update, ctx: CallbackContext, session: Session, user: User):
     lesson_id = int(ctx.match.group(1))
     lesson = (
-        session
-        .query(Lesson)
+        session.query(Lesson)
         # join user's subgroups
         .outerjoin(
             LessonSubgroupMember,
@@ -266,8 +260,7 @@ def link(update: Update, ctx: CallbackContext, session: Session, user: User):
         return end(update=update, ctx=ctx)
 
     moderator = (
-        session
-        .query(User)
+        session.query(User)
         .filter(
             (User.students_group_id == user.students_group.id) &
             (User.is_group_moderator == True)
@@ -276,7 +269,8 @@ def link(update: Update, ctx: CallbackContext, session: Session, user: User):
     )
     if moderator is None:
         update.message.reply_text(
-            text=f"{e_cancel} Ваша група наразі не має модератора! Будь ласка, зверніться до @iterlace!",
+            text=f"{E_CANCEL} Ваша група наразі не має модератора! Будь ласка, зверніться до "
+                 f"@iterlace!",
             parse_mode=ParseMode.HTML,
         )
         return end(update=update, ctx=ctx)
@@ -298,32 +292,30 @@ def set_lesson_link(update: Update, ctx: CallbackContext, session: Session, user
             text="Введіть посилання:",
             parse_mode=ParseMode.HTML,
             reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton(text=p_cancel, callback_data=states.END)
+                InlineKeyboardButton(text=P_CANCEL, callback_data=states.END)
             ]]),
         )
         return states.LinkWait
-    else:
-        link = update.message.text.strip()
-        message = "@{user} хоче встановити нове посилання для <b>{lesson}</b>:\n{link}"\
-            .format(user=user.tg_username, lesson=str(lesson), link=link)
-        if lesson.link:
-            message += "\nзамість\n{}".format(lesson.link)
 
-        request = Request(
-            initiator=user,
-            message=message,
-            meta={
-                "lesson_id": lesson.id,
-                "link": link,
-            },
-            students_group=user.students_group,
-        )
-        send_request(
-            request=request,
-            session=session,
-            accept_callback=states.ModeratorAcceptLink,
-            reject_callback=states.ModeratorRejectLink,
-        )
-        return end(update=update, ctx=ctx)
+    link = update.message.text.strip()
+    message = "@{user} хоче встановити нове посилання для <b>{lesson}</b>:\n{link}" \
+        .format(user=user.tg_username, lesson=str(lesson), link=link)
+    if lesson.link:
+        message += "\nзамість\n{}".format(lesson.link)
 
-
+    request = Request(
+        initiator=user,
+        message=message,
+        meta={
+            "lesson_id": lesson.id,
+            "link": link,
+        },
+        students_group=user.students_group,
+    )
+    send_request(
+        request=request,
+        session=session,
+        accept_callback=states.ModeratorAcceptLink,
+        reject_callback=states.ModeratorRejectLink,
+    )
+    return end(update=update, ctx=ctx)

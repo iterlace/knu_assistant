@@ -1,21 +1,25 @@
-
 import logging
+import datetime as dt
 
-import sqlalchemy as sqa
-from sqlalchemy import create_engine
-from sqlalchemy import MetaData, Table, Column, Sequence, UniqueConstraint
-from sqlalchemy.sql.sqltypes import *
-from sqlalchemy.dialects import postgresql as pg
-from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlalchemy import ForeignKey
+from sqlalchemy import MetaData, Table, Column, UniqueConstraint
+from sqlalchemy import create_engine
+from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
-from sqlalchemy.sql import text
+from sqlalchemy.sql.sqltypes import (
+    Integer,
+    String,
+    Boolean,
+    DateTime,
+    Date,
+    Time,
+    Text
+)
 
 import assistant.config as config
 
 logger = logging.getLogger(__name__)
-
 
 db = create_engine(config.DB_STRING, pool_size=40, max_overflow=10)
 Base = declarative_base()
@@ -151,11 +155,12 @@ class SingleLesson(Base):
     lesson = relationship("Lesson")
 
     __table_args__ = (
-        UniqueConstraint("lesson_id", "date", "starts_at", "ends_at", name="timetable_lesson_complex_key"),
+        UniqueConstraint("lesson_id", "date", "starts_at", "ends_at",
+                         name="timetable_lesson_complex_key"),
     )
 
     def __repr__(self):
-        return "<SingleLesson(id={}, lesson_id={}, date={}, starts_at={})>"\
+        return "<SingleLesson(id={}, lesson_id={}, date={}, starts_at={})>" \
             .format(self.id, self.lesson_id, self.date, self.starts_at)
 
 
@@ -164,7 +169,6 @@ LessonTeacher = Table(
     Column("lesson_id", Integer, ForeignKey("lessons.id")),
     Column("teacher_id", Integer, ForeignKey("teachers.id")),
 )
-
 
 # If lesson is divided into subgroups, match each one with its members (users)
 LessonSubgroupMember = Table(
@@ -212,7 +216,8 @@ class Lesson(Base):
     students_group = relationship("StudentsGroup", back_populates="lessons")
 
     __table_args__ = (
-        UniqueConstraint("name", "subgroup", "students_group_id", "lesson_format", name="lesson_complex_key"),
+        UniqueConstraint("name", "subgroup", "students_group_id", "lesson_format",
+                         name="lesson_complex_key"),
     )
 
     def represent_lesson_format(self):
@@ -259,7 +264,7 @@ class Teacher(Base):
     )
 
     def __repr__(self):
-        return "<Teacher(id={}, first_name={}, last_name={}, middle_name={})>"\
+        return "<Teacher(id={}, first_name={}, last_name={}, middle_name={})>" \
             .format(self.id, self.first_name, self.last_name, self.middle_name)
 
     def __str__(self):
@@ -273,8 +278,7 @@ class Teacher(Base):
     def short_name(self):
         if self.first_name and self.middle_name:
             return "{} {}. {}.".format(self.last_name, self.first_name[0], self.middle_name[0])
-        else:
-            return self.last_name
+        return self.last_name
 
 
 class Request(Base):
@@ -345,6 +349,5 @@ class Request(Base):
     moderator = relationship("User", foreign_keys=[moderator_id])
 
     def __repr__(self):
-        return "<Request(id={}, students_group_id={})>"\
+        return "<Request(id={}, students_group_id={})>" \
             .format(self.id, self.students_group_id)
-

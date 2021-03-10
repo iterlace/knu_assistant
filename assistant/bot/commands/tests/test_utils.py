@@ -1,4 +1,5 @@
 import mock
+
 from assistant.bot.dictionaries import states
 
 

@@ -1,4 +1,3 @@
-from datetime import datetime
 import asyncio
 
 from pytest import mark
@@ -6,15 +5,12 @@ from telethon import TelegramClient
 from telethon.tl.custom.message import Message
 
 from assistant import config
-from assistant.database import User
 from assistant.bot.commands.tests.utils import flatten_keyboard
-from assistant.database import StudentsGroup, Faculty, LessonSubgroupMember
-
+from assistant.database import LessonSubgroupMember
 from assistant.tests.factories import (
     FacultyFactory,
     LessonFactory,
     TeacherFactory,
-    SingleLessonFactory,
     UserFactory,
     StudentsGroupFactory,
 )
@@ -24,7 +20,6 @@ class TestChangeGroup:
 
     @mark.asyncio
     async def test_full_conversation(self, client: TelegramClient, db_session, use_bot):
-
         # faculty that would be selected
         csc = FacultyFactory(name="CSC", shortcut="CSC")
         extra_faculty = FacultyFactory()
@@ -65,14 +60,14 @@ class TestChangeGroup:
             r = await conv.get_response()
             kb = flatten_keyboard(r.buttons)
             assert "курс" in r.raw_text.lower()
-            assert len(kb) == 2+1  # 1st and 2nd courses + END button
+            assert len(kb) == 2 + 1  # 1st and 2nd courses + END button
             await r.click(data=b"1")
 
             # faculty choice
             r = await conv.get_edit()
             kb = flatten_keyboard(r.buttons)
             assert "факультет" in r.raw_text.lower()
-            assert len(kb) == 2+1  # csc and extra_faculty + END button
+            assert len(kb) == 2 + 1  # csc and extra_faculty + END button
             # select "CSC"
             await r.click(data=str(csc.id).encode("utf-8"))
 
@@ -80,7 +75,7 @@ class TestChangeGroup:
             r = await conv.get_edit()
             kb = flatten_keyboard(r.buttons)
             assert "груп" in r.raw_text.lower()
-            assert len(kb) == 1+1  # ensure extra_groups are excluded from this list + END button
+            assert len(kb) == 1 + 1  # ensure extra_groups are excluded from this list + END button
             # select group
             await r.click(data=str(group.id).encode("utf-8"))
 
@@ -90,7 +85,8 @@ class TestChangeGroup:
             # math subgroup choice
             r = await conv.get_response()
             kb = flatten_keyboard(r.buttons)
-            assert "підгрупу з {name} ({format})".format(name=math_1.name, format=math_1.lesson_format) \
+            assert "підгрупу з {name} ({format})".format(name=math_1.name,
+                                                         format=math_1.lesson_format) \
                    in r.raw_text
             assert kb[0].text == "[1] {teacher}".format(teacher=molodcov.short_name)
             assert kb[1].text == "[2] {teacher}".format(teacher=denisov.short_name)
@@ -100,7 +96,8 @@ class TestChangeGroup:
             # programming subgroup choice
             r = await conv.get_edit()
             kb = flatten_keyboard(r.buttons)
-            assert "підгрупу з {name} ({format})".format(name=programming_1.name, format=programming_1.lesson_format) \
+            assert "підгрупу з {name} ({format})".format(name=programming_1.name,
+                                                         format=programming_1.lesson_format) \
                    in r.raw_text
             assert kb[0].text == "[1] {teacher}".format(teacher=koval.short_name)
             assert kb[1].text == "[2] {teacher}".format(teacher=kondratyuk.short_name)
@@ -115,8 +112,7 @@ class TestChangeGroup:
             assert user.students_group == group
 
             subgroups = (
-                db_session
-                .query(LessonSubgroupMember.c.lesson_id, LessonSubgroupMember.c.user_id)
+                db_session.query(LessonSubgroupMember.c.lesson_id, LessonSubgroupMember.c.user_id)
                 .order_by(LessonSubgroupMember.c.lesson_id)
                 .all()
             )
@@ -126,7 +122,6 @@ class TestChangeGroup:
 
     @mark.asyncio
     async def test_empty_subgroups(self, client: TelegramClient, db_session, use_bot):
-
         # faculty that would be selected
         csc = FacultyFactory(name="CSC", shortcut="CSC")
 

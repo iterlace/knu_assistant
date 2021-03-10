@@ -1,13 +1,12 @@
-import random
 import datetime as dt
+import random
 import string
 
-from sqlalchemy.orm.scoping import scoped_session
 import factory
-from factory import Faker
 import factory.fuzzy as fuzzy
 from factory.alchemy import SQLAlchemyModelFactory
 
+from assistant.conftest import session
 from assistant.database import (
     User,
     StudentsGroup,
@@ -17,10 +16,7 @@ from assistant.database import (
     Faculty,
     Request,
     # M2M
-    LessonTeacher,
-    LessonSubgroupMember,
 )
-from assistant.conftest import session
 
 
 class FacultyFactory(SQLAlchemyModelFactory):
@@ -146,4 +142,3 @@ class RequestFactory(SQLAlchemyModelFactory):
                 self.students_group = self.initiator.students_group
             else:
                 self.students_group = StudentsGroupFactory()
-

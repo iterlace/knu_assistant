@@ -1,11 +1,4 @@
-
 import logging
-
-import telegram as tg
-from telegram import Bot, InlineKeyboardMarkup, InlineKeyboardButton
-
-from assistant.config import bot
-from assistant.database import Session, User
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +12,7 @@ def build_keyboard_menu(buttons, n_cols, header_buttons=None, footer_buttons=Non
     :param footer_buttons: additional buttons below
     :return:
     """
-    menu = [buttons[i:i+n_cols] for i in range(0, len(buttons), n_cols)]
+    menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
     if header_buttons:
         menu.insert(0, header_buttons)
     if footer_buttons:
@@ -30,4 +23,3 @@ def build_keyboard_menu(buttons, n_cols, header_buttons=None, footer_buttons=Non
 
 
 # def admin_home_keyboard(user: User):
-

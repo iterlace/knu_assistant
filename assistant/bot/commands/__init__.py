@@ -1,4 +1,4 @@
 from .basic import *
-from .user import *
-from .timetable import *
 from .moderation import *
+from .timetable import *
+from .user import *

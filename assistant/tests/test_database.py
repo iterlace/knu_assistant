@@ -1,21 +1,8 @@
-from datetime import datetime
-import asyncio
-
-import mock
-from pytest import mark, raises
 from sqlalchemy.orm import Session
 
-from assistant import config
-from assistant.database import User
-from assistant.database import StudentsGroup, Faculty, Lesson
-
 from assistant.tests.factories import (
-    FacultyFactory,
     LessonFactory,
     TeacherFactory,
-    SingleLessonFactory,
-    UserFactory,
-    StudentsGroupFactory,
 )
 
 
@@ -30,7 +17,7 @@ class TestLesson:
         tom = TeacherFactory(first_name="Tom", middle_name="O", last_name="Peterson")
         lesson = LessonFactory(name="Math", subgroup="1", teachers=[tom])
         db_session.commit()
-        assert str(lesson) == "Math ({lesson_format}, Peterson T. O.)"\
+        assert str(lesson) == "Math ({lesson_format}, Peterson T. O.)" \
             .format(lesson_format=lesson.represent_lesson_format())
 
     def test_str_with_multiple_teachers(self, db_session: Session):
@@ -38,7 +25,7 @@ class TestLesson:
         jack = TeacherFactory(first_name="Jack", middle_name="O", last_name="Smith")
         lesson = LessonFactory(name="Math", subgroup="1", teachers=[tom, jack])
         db_session.commit()
-        assert str(lesson) == "Math ({lesson_format}, Peterson T. O., Smith J. O.)"\
+        assert str(lesson) == "Math ({lesson_format}, Peterson T. O., Smith J. O.)" \
             .format(lesson_format=lesson.represent_lesson_format())
 
 
@@ -65,4 +52,3 @@ class TestTeacher:
 
         jones = TeacherFactory(first_name="", middle_name="O", last_name="Jones")
         assert jones.short_name == "Jones"
-

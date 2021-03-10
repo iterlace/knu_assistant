@@ -1,10 +1,9 @@
-from functools import wraps
-import logging
 import datetime as dt
+import logging
+from functools import wraps
 
-from telegram import Update
 from sqlalchemy.orm import Session as SqaSession
-from sqlalchemy.sql import select, insert, update, delete
+from telegram import Update
 
 from assistant.database import Session
 from assistant.database import User
@@ -26,6 +25,7 @@ def db_session(func):
         output = func(*args, **kwargs)
         session.close()
         return output
+
     return inner
 
 
@@ -70,30 +70,27 @@ def acquire_user(func):
 
 
 def moderators_only(func):
-
     @wraps(func)
     def inner(*args, user, **kwargs):
         if user.is_group_moderator:
             return func(*args, user=user, **kwargs)
-        else:
-            return None
+        return None
+
     return inner
 
 
 def admins_only(func):
-
     @wraps(func)
     def inner(*args, user, **kwargs):
         if user.is_admin:
             return func(*args, user=user, **kwargs)
-        else:
-            return None
+        return None
+
     return inner
 
 
 # TODO
 def moderation_accept(func):
-
     @wraps(func)
     def inner(update, ctx, session, **kwargs):
         pass
@@ -103,7 +100,6 @@ def moderation_accept(func):
 
 # TODO
 def moderation_reject(func):
-
     @wraps(func)
     def inner(update, ctx, session, **kwargs):
         pass

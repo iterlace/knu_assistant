@@ -1,22 +1,16 @@
-from datetime import datetime
 import asyncio
 
-import mock
 from pytest import mark, raises
 from telethon import TelegramClient
 from telethon.tl.custom.message import Message
 
 from assistant import config
-from assistant.database import User
 from assistant.bot.commands.tests.utils import flatten_keyboard
-from assistant.database import StudentsGroup, Faculty
-from assistant.bot.commands.user import change_group
-
+from assistant.database import User
 from assistant.tests.factories import (
     FacultyFactory,
     LessonFactory,
     TeacherFactory,
-    SingleLessonFactory,
     UserFactory,
     StudentsGroupFactory,
 )
@@ -84,7 +78,8 @@ class TestStart:
             # programming subgroup choice
             r = await conv.get_response()
             kb = flatten_keyboard(r.buttons)
-            assert "підгрупу з {name} ({format})".format(name=programming_1.name, format=programming_1.lesson_format) \
+            assert "підгрупу з {name} ({format})".format(name=programming_1.name,
+                                                         format=programming_1.lesson_format) \
                    in r.raw_text
             await kb[0].click()
 

@@ -1,3 +1,6 @@
+""" Days of week constants with their indexes and representations """
+
+
 class DayOfWeek(int):
     name = None
 
@@ -15,4 +18,4 @@ FRIDAY = DayOfWeek(4, "П'ятниця")
 SATURDAY = DayOfWeek(5, "Субота")
 SUNDAY = DayOfWeek(6, "Неділя")
 
-DAYS_OF_WEEK = [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
+LIST = [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]

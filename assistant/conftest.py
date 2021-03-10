@@ -1,37 +1,29 @@
-import os
-import sys
-import threading
-import pytest
-from pytest import mark
-from functools import wraps
-import mock
 import importlib
 import logging
-from time import sleep
-import datetime as dt
-from typing import List, Tuple, Optional, Any, Iterable
+import os
+import threading
+from functools import wraps
 from html import escape
+from time import sleep
 
-from sqlalchemy import orm
-from sqlalchemy import create_engine
-from sqlalchemy import event
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm import Session as SqaSession
+import mock
+import pytest
 from alembic.command import upgrade as alembic_upgrade
 from alembic.config import Config as AlembicConfig
+from pytest import mark
+from sqlalchemy import event
+from sqlalchemy.orm import Session as SqaSession
 from telethon import TelegramClient
-from telethon.sessions import StringSession
 from telethon.extensions.html import _add_surrogate, _del_surrogate
 from telethon.extensions.html import helpers
+from telethon.sessions import StringSession
 from telethon.tl.types import (
     MessageEntityBold, MessageEntityItalic, MessageEntityCode,
     MessageEntityPre, MessageEntityEmail, MessageEntityUrl,
     MessageEntityTextUrl, MessageEntityMentionName,
     MessageEntityUnderline, MessageEntityStrike, MessageEntityBlockquote,
-    TypeMessageEntity,
 )
 
-from assistant import config
 from assistant.database import Session
 
 logger = logging.getLogger(__name__)
@@ -42,6 +34,7 @@ API_HASH = os.environ["TELEGRAM_APP_HASH"]
 TG_SESSION = os.environ["TELETHON_SESSION"]
 
 session = Session()
+
 
 @event.listens_for(session, "after_transaction_end")
 def restart_savepoint(session, transaction):
@@ -64,13 +57,16 @@ def reload_db_session_decorator():
 def use_bot(db_session):
     """ Runs a telegram bot, which uses db session from the fixture """
 
-    # Mock assistant.bot.decorators.db_session to be able to rollback the session after test completed
+    # Mock assistant.bot.decorators.db_session to be able to rollback the session after test
+    # completed
     def mock_db_session(func):
         """ Pushes session, controlled by the fixture """
+
         @wraps(func)
         def inner(*args, **kwargs):
             kwargs["session"] = db_session
             return func(*args, **kwargs)
+
         return inner
 
     db_session_mock = mock.patch("assistant.bot.decorators.db_session", mock_db_session)
@@ -166,8 +162,9 @@ async def client() -> TelegramClient:
                 html.append('<blockquote>{}</blockquote>'.format(entity_text))
             elif entity_type == MessageEntityPre:
                 if entity.language:
-                    html.append("<pre>\n    <code class='language-{}'>\n        {}\n    </code>\n</pre>"
-                                .format(entity.language, entity_text))
+                    html.append(
+                        "<pre>\n    <code class='language-{}'>\n        {}\n    </code>\n</pre>"
+                            .format(entity.language, entity_text))
                 else:
                     html.append('<pre><code>{}</code></pre>'.format(entity_text))
             elif entity_type == MessageEntityEmail:
@@ -226,6 +223,6 @@ def db_session(db) -> SqaSession:
     session.begin_nested()  # Savepoint
 
     yield session
-    
+
     session.rollback()
     session.invalidate()

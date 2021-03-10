@@ -1,9 +1,8 @@
 import logging
 
+from sqlalchemy.orm import Session
 from telegram import (
     Update,
-    KeyboardButton,
-    ReplyKeyboardMarkup,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     ParseMode,
@@ -11,26 +10,16 @@ from telegram import (
 from telegram.ext import (
     CallbackContext,
 )
-import sqlalchemy as sqa
-from sqlalchemy import func
-from sqlalchemy.orm import Session
 
-from assistant.config import bot
-from assistant.database import User, StudentsGroup, Faculty, Lesson, LessonTeacher, LessonSubgroupMember
 from assistant.bot.decorators import acquire_user, db_session, moderators_only
 from assistant.bot.dictionaries import states
 from assistant.bot.dictionaries.phrases import *
 from assistant.bot.keyboards import build_keyboard_menu
-from assistant.bot.commands.utils import end
-
+from assistant.config import bot
 from assistant.database import (
     Request,
     User,
     Lesson,
-    Teacher,
-    LessonTeacher,
-    LessonSubgroupMember,
-    SingleLesson,
 )
 
 logger = logging.getLogger(__name__)
@@ -50,13 +39,12 @@ def send_request(request: Request, session: Session,
     :return: is messages sent successfully
     """
     moderator = (
-        session
-        .query(User)
-        .filter(
+        session.query(User)
+            .filter(
             (User.students_group_id == request.students_group.id) &
             (User.is_group_moderator == True)
         )
-        .first()
+            .first()
     )
     request.moderator = moderator
     if moderator is None:
@@ -75,11 +63,11 @@ def send_request(request: Request, session: Session,
 
     kb_buttons = [
         InlineKeyboardButton(
-            text=f"{e_accept} Підтвердити",
+            text=f"{E_ACCEPT} Підтвердити",
             callback_data=request.accept_callback,
         ),
         InlineKeyboardButton(
-            text=f"{e_cancel} Відхилити",
+            text=f"{E_CANCEL} Відхилити",
             callback_data=request.reject_callback,
         ),
     ]
@@ -123,13 +111,13 @@ def accept_link_request(update: Update, ctx: CallbackContext, session: Session, 
     session.commit()
     update.callback_query.answer()
     update.callback_query.edit_message_text(
-        text=f"{e_accept} {request.message}",
+        text=f"{E_ACCEPT} {request.message}",
         reply_markup=None,
         parse_mode=ParseMode.HTML,
     )
     bot.send_message(
         request.initiator.tg_id,
-        text=f"{e_accept} Ваш запит #{request.id} було підтверджено!",
+        text=f"{E_ACCEPT} Ваш запит #{request.id} було підтверджено!",
         parse_mode=ParseMode.HTML,
     )
 
@@ -150,12 +138,12 @@ def reject_link_request(update: Update, ctx: CallbackContext, session: Session, 
 
     update.callback_query.answer()
     update.callback_query.edit_message_text(
-        text=f"{e_cancel} {request.message}",
+        text=f"{E_CANCEL} {request.message}",
         reply_markup=None,
         parse_mode=ParseMode.HTML,
     )
     bot.send_message(
         request.initiator.tg_id,
-        text=f"{e_cancel} Ваш запит #{request.id} було відхилено!",
+        text=f"{E_CANCEL} Ваш запит #{request.id} було відхилено!",
         parse_mode=ParseMode.HTML,
     )
