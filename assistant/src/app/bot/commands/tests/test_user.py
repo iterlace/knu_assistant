@@ -4,7 +4,7 @@ from pytest import mark
 from telethon import TelegramClient
 from telethon.tl.custom.message import Message
 
-from app import config
+from app.core.config import settings
 from app.bot.commands.tests.utils import flatten_keyboard
 from app.database import LessonSubgroupMember
 from app.tests.factories import (
@@ -52,7 +52,7 @@ class TestChangeGroup:
 
         db_session.commit()
 
-        async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
+        async with client.conversation("@{}".format(settings.TELEGRAM_BOT_NAME), timeout=5) as conv:
             await conv.send_message("/change_group")
             r: Message
 
@@ -133,7 +133,7 @@ class TestChangeGroup:
 
         db_session.commit()
 
-        async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
+        async with client.conversation("@{}".format(settings.TELEGRAM_BOT_NAME), timeout=5) as conv:
             await conv.send_message("/change_group")
             r: Message
 
@@ -174,7 +174,7 @@ class TestChangeGroup:
         )
         db_session.commit()
 
-        async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
+        async with client.conversation("@{}".format(settings.TELEGRAM_BOT_NAME), timeout=5) as conv:
             await conv.send_message("/change_group")
             r: Message
 
@@ -208,7 +208,7 @@ class TestChangeGroup:
         user = UserFactory(tg_id=(await client.get_me()).id, students_group=group)
         db_session.commit()
 
-        async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
+        async with client.conversation("@{}".format(settings.TELEGRAM_BOT_NAME), timeout=5) as conv:
             await conv.send_message("/change_group")
             r: Message
 

@@ -37,7 +37,9 @@ isort = "^5.9.3"
 autoflake = "^1.4"
 flake8 = "^3.9.2"
 SQLAlchemy = {version = "^1.4.5", extras = ["mypy"]}
-
+telethon = "^1.23.0"
+factory-boy = "^3.2.0"
+pytest-mock = "^3.6.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

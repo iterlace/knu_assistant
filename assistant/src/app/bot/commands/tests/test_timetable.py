@@ -6,7 +6,7 @@ from telethon import TelegramClient
 from telethon.tl.custom.message import Message
 
 import app
-from app import config
+from app.core.config import settings
 from app.bot.commands.tests.utils import flatten_keyboard
 from app.bot.commands.timetable import (
     build_timetable_day,
@@ -172,7 +172,7 @@ class TestTimetableCommands:
             )
             db_session.commit()
 
-            async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
+            async with client.conversation("@{}".format(settings.TELEGRAM_BOT_NAME), timeout=5) as conv:
                 await conv.send_message("/day")
                 r: Message
 
@@ -215,7 +215,8 @@ class TestTimetableCommands:
             dt_mock.datetime = dt.datetime
             dt_mock.timedelta = dt.timedelta
 
-            async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
+            async with client.conversation("@{}".format(settings.TELEGRAM_BOT_NAME), timeout=5) as \
+                    conv:
                 await conv.send_message("/day")
                 r: Message
 
@@ -257,7 +258,7 @@ class TestTimetableCommands:
             )
             db_session.commit()
 
-            async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
+            async with client.conversation("@{}".format(settings.TELEGRAM_BOT_NAME), timeout=5) as conv:
                 await conv.send_message("/week")
                 r: Message
 
@@ -300,7 +301,7 @@ class TestTimetableCommands:
             dt_mock.datetime = dt.datetime
             dt_mock.timedelta = dt.timedelta
 
-            async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
+            async with client.conversation("@{}".format(settings.TELEGRAM_BOT_NAME), timeout=5) as conv:
                 await conv.send_message("/week")
                 r: Message
 

@@ -4,7 +4,7 @@ from pytest import mark, raises
 from telethon import TelegramClient
 from telethon.tl.custom.message import Message
 
-from app import config
+from app.core.config import settings
 from app.bot.commands.tests.utils import flatten_keyboard
 from app.database import User
 from app.tests.factories import (
@@ -37,7 +37,7 @@ class TestStart:
                                       name="P", lesson_format=1, students_group=group)
         db_session.commit()
 
-        async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
+        async with client.conversation("@{}".format(settings.TELEGRAM_BOT_NAME), timeout=5) as conv:
             await conv.send_message("/start")
             r: Message
 
@@ -98,7 +98,7 @@ class TestStart:
 
         db_session.commit()
 
-        async with client.conversation("@{}".format(config.BOT_NAME), timeout=5) as conv:
+        async with client.conversation("@{}".format(settings.TELEGRAM_BOT_NAME), timeout=5) as conv:
             await conv.send_message("/start")
             r = await conv.get_response()
             # Ensure it is not common response
