@@ -7,7 +7,7 @@
 
 
 # Requirements
-1. Python 3.8
+1. Python 3.9
 2. Postgres 13
 
 
@@ -16,24 +16,25 @@
 ### 2. Configure the application
 #### 2.1. Copy .env.example to .env
 #### 2.2. Fill it with your environment variables
-### 3. Run tests
+### 3. Set up auto-export of .env environment variables (via IDE config)
+### 4. Create poetry environment
 ```bash
-python setup.py test
+cd ./assistant/src
+
+python -m pip install poetry
+poetry install
+
+poetry shell
 ```
-### 4. Install the package
-for a development purpose:
+### 5. Run tests
 ```bash
-python setup.py develop
-```
-for a production use:
-```bash
-python setup.py install
+pytest
 ```
 ### 5. Apply all migrations
 ```bash
-knu_assistant_apply_migrations
+poetry run apply-migrations
 ```
 ### 6. Run the bot
 ```bash
-knu_assistant_run_bot
+poetry run run-bot
 ```
