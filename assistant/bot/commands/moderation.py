@@ -1,26 +1,15 @@
 import logging
 
 from sqlalchemy.orm import Session
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    ParseMode,
-)
-from telegram.ext import (
-    CallbackContext,
-)
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Update
+from telegram.ext import CallbackContext
 
 from assistant.bot.decorators import acquire_user, db_session, moderators_only
 from assistant.bot.dictionaries import states
 from assistant.bot.dictionaries.phrases import *
 from assistant.bot.keyboards import build_keyboard_menu
 from assistant.config import bot
-from assistant.database import (
-    Request,
-    User,
-    Lesson,
-)
+from assistant.database import Lesson, Request, User
 
 logger = logging.getLogger(__name__)
 
@@ -40,11 +29,11 @@ def send_request(request: Request, session: Session,
     """
     moderator = (
         session.query(User)
-            .filter(
+        .filter(
             (User.students_group_id == request.students_group.id) &
             (User.is_group_moderator == True)
         )
-            .first()
+        .first()
     )
     request.moderator = moderator
     if moderator is None:

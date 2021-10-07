@@ -8,10 +8,7 @@ from telegram import ParseMode
 from assistant.bot.commands.timetable import build_timetable_day
 from assistant.bot.dictionaries import week
 from assistant.config import bot
-from assistant.database import (
-    Session,
-    User,
-)
+from assistant.database import Session, User
 from assistant.tasks.config import app
 
 

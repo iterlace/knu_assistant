@@ -1,6 +1,4 @@
-from telegram import (
-    Update,
-)
+from telegram import Update
 from telegram.ext import CallbackContext
 
 from assistant.bot.dictionaries import states

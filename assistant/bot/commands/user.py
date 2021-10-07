@@ -3,15 +3,8 @@ import logging
 import sqlalchemy as sqa
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    ParseMode,
-)
-from telegram.ext import (
-    CallbackContext,
-)
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Update
+from telegram.ext import CallbackContext
 
 from assistant.bot.commands.utils import end
 from assistant.bot.decorators import acquire_user, db_session
@@ -19,7 +12,7 @@ from assistant.bot.dictionaries import states
 from assistant.bot.dictionaries.phrases import *
 from assistant.bot.keyboards import build_keyboard_menu
 from assistant.config import bot
-from assistant.database import User, StudentsGroup, Faculty, Lesson
+from assistant.database import Faculty, Lesson, StudentsGroup, User
 
 logger = logging.getLogger(__name__)
 
@@ -189,9 +182,12 @@ def select_subgroups(update: Update, ctx: CallbackContext, session: Session, use
             teachers = []
             for teacher in subgroup.teachers:
                 teachers.append(teacher.short_name)
+
             kb_buttons.append(InlineKeyboardButton(
-                text="[{subgroup}] {teachers}".format(subgroup=subgroup.subgroup,
-                                                      teachers=", ".join(teachers)),
+                text="[#{subgroup}] {teachers}".format(
+                    subgroup=subgroup.subgroup,
+                    teachers=", ".join(teachers),
+                ),
                 callback_data=subgroup.subgroup,
             ))
         kb_footer = None

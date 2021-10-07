@@ -11,13 +11,19 @@ import json
 import logging
 import re
 import urllib.parse
-from typing import Optional, Any, Dict
+from typing import Any, Dict, Optional
 
 import requests
 from sqlalchemy.orm.session import Session as SqaSession
 
-from assistant.database import Session
-from assistant.database import StudentsGroup, Faculty, Lesson, SingleLesson, Teacher
+from assistant.database import (
+    Faculty,
+    Lesson,
+    Session,
+    SingleLesson,
+    StudentsGroup,
+    Teacher,
+)
 
 logger = logging.getLogger(__name__)
 full_name_mask = re.compile(r"^\s*?([а-яїєі']+)\s*?([а-яїєі']+)\.?\s*?([а-яїєі']+)\.?\s*?$", re.I)

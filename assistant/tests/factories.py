@@ -7,15 +7,14 @@ import factory.fuzzy as fuzzy
 from factory.alchemy import SQLAlchemyModelFactory
 
 from assistant.conftest import session
-from assistant.database import (
-    User,
-    StudentsGroup,
-    Lesson,
-    SingleLesson,
-    Teacher,
+from assistant.database import (  # M2M
     Faculty,
+    Lesson,
     Request,
-    # M2M
+    SingleLesson,
+    StudentsGroup,
+    Teacher,
+    User,
 )
 
 

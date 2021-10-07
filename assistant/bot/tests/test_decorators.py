@@ -2,9 +2,7 @@ import mock
 from sqlalchemy.orm import sessionmaker
 
 from assistant.database import Session
-from assistant.tests.factories import (
-    UserFactory,
-)
+from assistant.tests.factories import UserFactory
 
 
 class TestDbSession:

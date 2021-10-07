@@ -1,9 +1,6 @@
 from sqlalchemy.orm import Session
 
-from assistant.tests.factories import (
-    LessonFactory,
-    TeacherFactory,
-)
+from assistant.tests.factories import LessonFactory, TeacherFactory
 
 
 class TestLesson:

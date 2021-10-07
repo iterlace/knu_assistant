@@ -3,11 +3,7 @@ import re
 from assistant.bot.dictionaries import states
 from assistant.bot.dictionaries.phrases import *
 from assistant.config import bot
-from assistant.tests.factories import (
-    UserFactory,
-    StudentsGroupFactory,
-    RequestFactory,
-)
+from assistant.tests.factories import RequestFactory, StudentsGroupFactory, UserFactory
 
 AcceptState = states.State("accept", "accept_{}", re.compile(r"^accept_(\d+)$"))
 RejectState = states.State("reject", "reject_{}", re.compile(r"^reject_(\d+)$"))
@@ -44,8 +40,8 @@ class TestSendRequest:
 
         initiator_message = send_message.call_args_list[1]
         assert initiator_message.args[0] == initiator.tg_id
-        assert initiator_message.kwargs[
-                   "text"] == f"Запит #{request.id} надіслано до модератора групи!"
+        assert initiator_message.kwargs["text"] == \
+               f"Запит #{request.id} надіслано до модератора групи!"
 
 # TODO
 # class TestLessonLinkRequest:

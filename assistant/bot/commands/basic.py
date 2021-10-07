@@ -2,13 +2,8 @@ import logging
 import random
 
 from sqlalchemy.orm import Session
-from telegram import (
-    Update,
-    ParseMode,
-)
-from telegram.ext import (
-    CallbackContext,
-)
+from telegram import ParseMode, Update
+from telegram.ext import CallbackContext
 
 import assistant
 from assistant.bot.commands.user import change_group

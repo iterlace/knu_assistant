@@ -1,10 +1,10 @@
 import json
 from dataclasses import dataclass
-from typing import Union, Optional, List, Tuple, Dict
+from typing import Dict, List, Optional, Tuple, Union
 
 import pytest
 
-from assistant.database import StudentsGroup, Faculty, Lesson, SingleLesson, Teacher
+from assistant.database import Faculty, Lesson, SingleLesson, StudentsGroup, Teacher
 from assistant.timetable_scrapper.worker import TimetableScrapper
 
 

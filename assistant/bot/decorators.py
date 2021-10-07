@@ -5,8 +5,7 @@ from functools import wraps
 from sqlalchemy.orm import Session as SqaSession
 from telegram import Update
 
-from assistant.database import Session
-from assistant.database import User
+from assistant.database import Session, User
 
 logger = logging.getLogger()
 

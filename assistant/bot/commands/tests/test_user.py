@@ -10,9 +10,9 @@ from assistant.database import LessonSubgroupMember
 from assistant.tests.factories import (
     FacultyFactory,
     LessonFactory,
+    StudentsGroupFactory,
     TeacherFactory,
     UserFactory,
-    StudentsGroupFactory,
 )
 
 

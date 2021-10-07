@@ -14,14 +14,20 @@ from pytest import mark
 from sqlalchemy import event
 from sqlalchemy.orm import Session as SqaSession
 from telethon import TelegramClient
-from telethon.extensions.html import _add_surrogate, _del_surrogate
-from telethon.extensions.html import helpers
+from telethon.extensions.html import _add_surrogate, _del_surrogate, helpers
 from telethon.sessions import StringSession
 from telethon.tl.types import (
-    MessageEntityBold, MessageEntityItalic, MessageEntityCode,
-    MessageEntityPre, MessageEntityEmail, MessageEntityUrl,
-    MessageEntityTextUrl, MessageEntityMentionName,
-    MessageEntityUnderline, MessageEntityStrike, MessageEntityBlockquote,
+    MessageEntityBlockquote,
+    MessageEntityBold,
+    MessageEntityCode,
+    MessageEntityEmail,
+    MessageEntityItalic,
+    MessageEntityMentionName,
+    MessageEntityPre,
+    MessageEntityStrike,
+    MessageEntityTextUrl,
+    MessageEntityUnderline,
+    MessageEntityUrl,
 )
 
 from assistant.database import Session

@@ -9,18 +9,18 @@ import assistant
 from assistant import config
 from assistant.bot.commands.tests.utils import flatten_keyboard
 from assistant.bot.commands.timetable import (
-    build_timetable_lesson,
     build_timetable_day,
+    build_timetable_lesson,
     build_timetable_week,
 )
 from assistant.bot.dictionaries import states
 from assistant.bot.dictionaries.phrases import *
 from assistant.tests.factories import (
     LessonFactory,
-    TeacherFactory,
     SingleLessonFactory,
-    UserFactory,
     StudentsGroupFactory,
+    TeacherFactory,
+    UserFactory,
 )
 
 

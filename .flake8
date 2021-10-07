@@ -1,0 +1,4 @@
+[flake8]
+# TODO: research how to move it to the pyproject.toml
+ignore = F841, E203, E501, W503, E131, E731
+exclude = migrations, settings, __init__.py

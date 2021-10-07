@@ -1,21 +1,18 @@
-import logging
 import datetime as dt
+import logging
 
-from sqlalchemy import ForeignKey
-from sqlalchemy import MetaData, Table, Column, UniqueConstraint
-from sqlalchemy import create_engine
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    MetaData,
+    Table,
+    UniqueConstraint,
+    create_engine,
+)
 from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship, backref
-from sqlalchemy.sql.sqltypes import (
-    Integer,
-    String,
-    Boolean,
-    DateTime,
-    Date,
-    Time,
-    Text
-)
+from sqlalchemy.orm import backref, relationship, sessionmaker
+from sqlalchemy.sql.sqltypes import Boolean, Date, DateTime, Integer, String, Text, Time
 
 import assistant.config as config
 

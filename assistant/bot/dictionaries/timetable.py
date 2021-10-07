@@ -13,9 +13,14 @@ __all__ = ["LECTURE", "PRACTICAL", "LABORATORY_WORK", "FACULTATIVE", "LESSON_TYP
 
 
 class LessonType(str):
-    name = None  # Full name
-    abbr = None  # Abbreviation
-    keyword = None  # Latin name
+    # Full name
+    name = None
+
+    # Abbreviation
+    abbr = None
+
+    # Latin name
+    keyword = None
 
     def __new__(cls, keyword, name, abbr):
         """

@@ -5,15 +5,8 @@ import re
 
 import telegram as tg
 from sqlalchemy.orm import Session
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    ParseMode,
-)
-from telegram.ext import (
-    CallbackContext,
-)
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Update
+from telegram.ext import CallbackContext
 
 from assistant.bot.commands.moderation import send_request
 from assistant.bot.commands.utils import end
@@ -21,13 +14,7 @@ from assistant.bot.decorators import acquire_user, db_session
 from assistant.bot.dictionaries import states, week
 from assistant.bot.dictionaries.phrases import *
 from assistant.bot.keyboards import build_keyboard_menu
-from assistant.database import (
-    User,
-    Lesson,
-    SingleLesson,
-    LessonSubgroupMember,
-    Request,
-)
+from assistant.database import Lesson, LessonSubgroupMember, Request, SingleLesson, User
 from assistant.utils import get_monday
 
 logger = logging.getLogger(__name__)

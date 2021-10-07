@@ -1,12 +1,12 @@
 import logging
 
 from telegram.ext import (
-    Updater,
-    Filters,
-    CommandHandler,
-    MessageHandler,
     CallbackQueryHandler,
+    CommandHandler,
     ConversationHandler,
+    Filters,
+    MessageHandler,
+    Updater,
 )
 
 from assistant import config
