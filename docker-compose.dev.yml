@@ -1,0 +1,11 @@
+version: "3.7"
+
+services:
+
+  bot:
+    volumes:
+      - "./assistant/src:/opt/assistant"
+
+  celery:
+    volumes:
+      - "./assistant/src:/opt/assistant"

@@ -1,46 +1,46 @@
-version: 2.1
-
-orbs:
-  python: circleci/python@0.2.1
-
-jobs:
-  build-and-test:
-    docker:
-      - image: circleci/python:3.8.7-buster
-        environment:
-          DEBUG: 0
-          TELEGRAM_APP_ID: $TELEGRAM_APP_ID
-          TELETGRAM_APP_HASH: $TELEGRAM_APP_HASH
-          TELETHON_SESSION: $TELETHON_SESSION
-          BOT_NAME: $BOT_NAME
-          BOT_TOKEN: $BOT_TOKEN
-          BOT_WORKERS: 1
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_NAME: knu_assistant
-          DB_USERNAME: root
-          DB_PASSWORD: 0
-          DB_URL: postgresql://root:0@localhost/knu_assistant
-      - image: circleci/postgres:13.0
-        environment:
-          POSTGRES_USER: root
-          POSTGRES_DB: knu_assistant
-          POSTGRES_PASSWORD: 0
-    steps:
-      - checkout
-#      - restore_cache:
-#          keys:
-#            - requirement-{{ checksum "setup.py" }}
-#            - requirement- # used if checksum fails
-      - run: |
-          sudo apt update
-          sudo apt install -y postgresql-client
-      - run: touch .env
-      - run:
-          name: Test
-          command: python setup.py test
-
-workflows:
-  main:
-    jobs:
-      - build-and-test
+#version: 2.1
+#
+#orbs:
+#  python: circleci/python@0.2.1
+#
+#jobs:
+#  build-and-test:
+#    docker:
+#      - image: circleci/python:3.8.7-buster
+#        environment:
+#          DEBUG: 0
+#          TELEGRAM_APP_ID: $TELEGRAM_APP_ID
+#          TELETGRAM_APP_HASH: $TELEGRAM_APP_HASH
+#          TELETHON_SESSION: $TELETHON_SESSION
+#          BOT_NAME: $BOT_NAME
+#          BOT_TOKEN: $BOT_TOKEN
+#          BOT_WORKERS: 1
+#          DB_HOST: localhost
+#          DB_PORT: 5432
+#          DB_NAME: knu_assistant
+#          DB_USERNAME: root
+#          DB_PASSWORD: 0
+#          DB_URL: postgresql://root:0@localhost/knu_assistant
+#      - image: circleci/postgres:13.0
+#        environment:
+#          POSTGRES_USER: root
+#          POSTGRES_DB: knu_assistant
+#          POSTGRES_PASSWORD: 0
+#    steps:
+#      - checkout
+##      - restore_cache:
+##          keys:
+##            - requirement-{{ checksum "setup.py" }}
+##            - requirement- # used if checksum fails
+#      - run: |
+#          sudo apt update
+#          sudo apt install -y postgresql-client
+#      - run: touch .env
+#      - run:
+#          name: Test
+#          command: python setup.py test
+#
+#workflows:
+#  main:
+#    jobs:
+#      - build-and-test
