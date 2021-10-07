@@ -30,11 +30,11 @@ poetry shell
 ```bash
 pytest
 ```
-### 5. Apply all migrations
+### 6. Apply all migrations
 ```bash
 poetry run apply-migrations
 ```
-### 6. Run the bot
+### 7. Run the bot
 ```bash
 poetry run run-bot
 ```
