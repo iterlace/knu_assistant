@@ -88,8 +88,8 @@ class TestChangeGroup:
             assert "підгрупу з {name} ({format})".format(name=math_1.name,
                                                          format=math_1.lesson_format) \
                    in r.raw_text
-            assert kb[0].text == "[1] {teacher}".format(teacher=molodcov.short_name)
-            assert kb[1].text == "[2] {teacher}".format(teacher=denisov.short_name)
+            assert kb[0].text == "[#1] {teacher}".format(teacher=molodcov.short_name)
+            assert kb[1].text == "[#2] {teacher}".format(teacher=denisov.short_name)
             assert kb[2].data == b"-1"
             await kb[0].click()  # Select math_1
 
@@ -99,8 +99,8 @@ class TestChangeGroup:
             assert "підгрупу з {name} ({format})".format(name=programming_1.name,
                                                          format=programming_1.lesson_format) \
                    in r.raw_text
-            assert kb[0].text == "[1] {teacher}".format(teacher=koval.short_name)
-            assert kb[1].text == "[2] {teacher}".format(teacher=kondratyuk.short_name)
+            assert kb[0].text == "[#1] {teacher}".format(teacher=koval.short_name)
+            assert kb[1].text == "[#2] {teacher}".format(teacher=kondratyuk.short_name)
             assert kb[2].data == b"-1"
             await kb[0].click()  # Select programming_1
 
