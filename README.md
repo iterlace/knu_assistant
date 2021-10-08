@@ -11,7 +11,7 @@
 2. Postgres 13
 
 
-# Installation
+# Set up for development
 ### 1. Clone git repository
 ### 2. Configure the application
 #### 2.1. Copy .env.example to .env
