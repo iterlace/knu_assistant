@@ -45,7 +45,7 @@ app.config_from_object(appConfig)
 
 app.log.setup()
 app.autodiscover_tasks(
-    lambda: [
-        "app.tasks",
+    [
+        "app",
     ]
 )
